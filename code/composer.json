@@ -1,0 +1,14 @@
+{
+    "name": "quiz-portal/online-quiz",
+    "description": "Online Quiz Portal System",
+    "type": "project",
+    "require": {
+        "php": ">=7.2",
+        "mpdf/mpdf": "^8.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "QuizPortal\\": "src/"
+        }
+    }
+} 
