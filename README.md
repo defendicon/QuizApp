@@ -33,6 +33,22 @@ Question paper is generated **dynamically and randomly** when a student clicks o
 * Template For Website : Material Design Template
     * https://www.creative-tim.com/product/material-kit
 
+### Project Structure
+The repository contains the following folders:
+
+```
+.
+├── code        # PHP source files and web assets
+├── images      # Screenshots referenced in the README
+├── sql         # Example MySQL dump files
+├── Project Proposal.pdf
+├── Project Report DS.pdf
+└── README.md
+```
+
+The main application code lives in the `code` directory while database schemas
+are provided under `sql/`.
+
 ### **Database Information**
 |Table Name|Purpose|
 |---|---|
@@ -153,6 +169,9 @@ Multi Server Question Feed also works in this configuration, where instructor ca
 ![](./images/Screenshot12.png)
 ![](./images/Screenshot13.png)
 ![](./images/Screenshot14.png)
+## Development Notes
+All PHP files were linted using `php -l` and no syntax errors were detected.
+
 ---
 
     
