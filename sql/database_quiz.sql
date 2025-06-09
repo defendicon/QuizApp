@@ -132,7 +132,8 @@ CREATE TABLE `dropdown` (
   `question` text NOT NULL,
   `options` text NOT NULL,
   `answer` varchar(255) NOT NULL,
-  `chapter_id` int(11) DEFAULT NULL
+  `chapter_id` int(11) DEFAULT NULL,
+  `topic_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 -- --------------------------------------------------------
@@ -145,7 +146,8 @@ CREATE TABLE `essay` (
   `id` int(11) NOT NULL,
   `question` text NOT NULL,
   `answer` text NOT NULL,
-  `chapter_id` int(11) DEFAULT NULL
+  `chapter_id` int(11) DEFAULT NULL,
+  `topic_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 -- --------------------------------------------------------
@@ -158,7 +160,8 @@ CREATE TABLE `fillintheblanks` (
   `id` int(11) NOT NULL,
   `question` text NOT NULL,
   `answer` varchar(255) NOT NULL,
-  `chapter_id` int(11) DEFAULT NULL
+  `chapter_id` int(11) DEFAULT NULL,
+  `topic_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 -- --------------------------------------------------------
@@ -197,7 +200,8 @@ CREATE TABLE `mcqdb` (
   `optionc` varchar(255) NOT NULL,
   `optiond` varchar(255) NOT NULL,
   `answer` char(1) NOT NULL,
-  `chapter_id` int(11) DEFAULT NULL
+  `chapter_id` int(11) DEFAULT NULL,
+  `topic_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
@@ -272,7 +276,8 @@ CREATE TABLE `numericaldb` (
   `id` int(11) NOT NULL,
   `question` text NOT NULL,
   `answer` int(11) NOT NULL,
-  `chapter_id` int(11) DEFAULT NULL
+  `chapter_id` int(11) DEFAULT NULL,
+  `topic_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 -- --------------------------------------------------------
@@ -531,7 +536,8 @@ CREATE TABLE `shortanswer` (
   `id` int(11) NOT NULL,
   `question` text NOT NULL,
   `answer` text NOT NULL,
-  `chapter_id` int(11) DEFAULT NULL
+  `chapter_id` int(11) DEFAULT NULL,
+  `topic_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 --
@@ -675,21 +681,24 @@ ALTER TABLE `class_sections`
 --
 ALTER TABLE `dropdown`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_fk_dropdown_chapter` (`chapter_id`);
+  ADD KEY `idx_fk_dropdown_chapter` (`chapter_id`),
+  ADD KEY `idx_fk_dropdown_topic` (`topic_id`);
 
 --
 -- Indexes for table `essay`
 --
 ALTER TABLE `essay`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_fk_essay_chapter` (`chapter_id`);
+  ADD KEY `idx_fk_essay_chapter` (`chapter_id`),
+  ADD KEY `idx_fk_essay_topic` (`topic_id`);
 
 --
 -- Indexes for table `fillintheblanks`
 --
 ALTER TABLE `fillintheblanks`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_fk_fillintheblanks_chapter` (`chapter_id`);
+  ADD KEY `idx_fk_fillintheblanks_chapter` (`chapter_id`),
+  ADD KEY `idx_fk_fillintheblanks_topic` (`topic_id`);
 
 --
 -- Indexes for table `instructorinfo`
@@ -702,7 +711,8 @@ ALTER TABLE `instructorinfo`
 --
 ALTER TABLE `mcqdb`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_fk_mcqdb_chapter` (`chapter_id`);
+  ADD KEY `idx_fk_mcqdb_chapter` (`chapter_id`),
+  ADD KEY `idx_fk_mcqdb_topic` (`topic_id`);
 
 --
 -- Indexes for table `notifications`
@@ -717,7 +727,8 @@ ALTER TABLE `notifications`
 --
 ALTER TABLE `numericaldb`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_fk_numericaldb_chapter` (`chapter_id`);
+  ADD KEY `idx_fk_numericaldb_chapter` (`chapter_id`),
+  ADD KEY `idx_fk_numericaldb_topic` (`topic_id`);
 
 --
 -- Indexes for table `quizconfig`
@@ -768,7 +779,8 @@ ALTER TABLE `result`
 --
 ALTER TABLE `shortanswer`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_fk_shortanswer_chapter` (`chapter_id`);
+  ADD KEY `idx_fk_shortanswer_chapter` (`chapter_id`),
+  ADD KEY `idx_fk_shortanswer_topic` (`topic_id`);
 
 --
 -- Indexes for table `studentinfo`
@@ -903,19 +915,22 @@ ALTER TABLE `dropdown`
 -- Constraints for table `essay`
 --
 ALTER TABLE `essay`
-  ADD CONSTRAINT `fk_essay_chapter` FOREIGN KEY (`chapter_id`) REFERENCES `chapters` (`chapter_id`) ON DELETE SET NULL ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_essay_chapter` FOREIGN KEY (`chapter_id`) REFERENCES `chapters` (`chapter_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_essay_topic` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`topic_id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Constraints for table `fillintheblanks`
 --
 ALTER TABLE `fillintheblanks`
-  ADD CONSTRAINT `fk_fillintheblanks_chapter` FOREIGN KEY (`chapter_id`) REFERENCES `chapters` (`chapter_id`) ON DELETE SET NULL ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_fillintheblanks_chapter` FOREIGN KEY (`chapter_id`) REFERENCES `chapters` (`chapter_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_fillintheblanks_topic` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`topic_id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Constraints for table `mcqdb`
 --
 ALTER TABLE `mcqdb`
-  ADD CONSTRAINT `fk_mcqdb_chapter` FOREIGN KEY (`chapter_id`) REFERENCES `chapters` (`chapter_id`) ON DELETE SET NULL ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_mcqdb_chapter` FOREIGN KEY (`chapter_id`) REFERENCES `chapters` (`chapter_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_mcqdb_topic` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`topic_id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Constraints for table `notifications`
@@ -928,7 +943,8 @@ ALTER TABLE `notifications`
 -- Constraints for table `numericaldb`
 --
 ALTER TABLE `numericaldb`
-  ADD CONSTRAINT `fk_numericaldb_chapter` FOREIGN KEY (`chapter_id`) REFERENCES `chapters` (`chapter_id`) ON DELETE SET NULL ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_numericaldb_chapter` FOREIGN KEY (`chapter_id`) REFERENCES `chapters` (`chapter_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_numericaldb_topic` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`topic_id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Constraints for table `quizconfig`
@@ -976,7 +992,8 @@ ALTER TABLE `result`
 -- Constraints for table `shortanswer`
 --
 ALTER TABLE `shortanswer`
-  ADD CONSTRAINT `fk_shortanswer_chapter` FOREIGN KEY (`chapter_id`) REFERENCES `chapters` (`chapter_id`) ON DELETE SET NULL ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_shortanswer_chapter` FOREIGN KEY (`chapter_id`) REFERENCES `chapters` (`chapter_id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_shortanswer_topic` FOREIGN KEY (`topic_id`) REFERENCES `topics` (`topic_id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Constraints for table `studentinfo`

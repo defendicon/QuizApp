@@ -53,6 +53,7 @@ $chapter_text = "";
 
 // Add new variables for chapter
 $chapter_id = null;
+$topic_id = null;
 
 // Define options for Class and Chapter dropdowns by fetching from DB
 $class_options = []; // Initialize as empty array
@@ -86,12 +87,12 @@ if ($conn) {
         $result_subjects->free();
     }
 
-    // Prepare JavaScript for dynamic chapter loading
+    // Prepare JavaScript for dynamic chapter and topic loading
     $js_for_chapters = "<script>
     function loadQuestionFeedChapters(type) {
         var classId = document.getElementById('class_id_' + type).value;
         var subjectId = document.getElementById('subject_id_' + type).value;
-        
+
         if(classId && subjectId) {
             fetch('get_chapters.php?class_id=' + classId + '&subject_id=' + subjectId)
                 .then(response => response.json())
@@ -100,6 +101,33 @@ if ($conn) {
                     chapterSelect.innerHTML = '<option value=\"\">Select Chapter</option>';
                     data.forEach(function(chapter) {
                         chapterSelect.innerHTML += '<option value=\"' + chapter.chapter_id + '\">' + chapter.chapter_name + '</option>';
+                    });
+                    var topicSelect = document.getElementById('topic_id_' + type);
+                    if(topicSelect){
+                        topicSelect.innerHTML = '<option value=\"\">Select Topic</option>';
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+    }
+
+    function loadQuestionFeedTopics(type, selected) {
+        var chapterId = document.getElementById('chapter_id_' + type).value;
+        var topicSelect = document.getElementById('topic_id_' + type);
+        if(!topicSelect) return;
+        topicSelect.innerHTML = '<option value=\"\">Select Topic</option>';
+        if(chapterId){
+            fetch('get_topics.php?chapter_id=' + chapterId)
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(function(topic){
+                        var opt = document.createElement('option');
+                        opt.value = topic.topic_id;
+                        opt.text = topic.topic_name;
+                        if(selected && parseInt(selected) === parseInt(topic.topic_id)){
+                            opt.selected = true;
+                        }
+                        topicSelect.appendChild(opt);
                     });
                 })
                 .catch(error => console.error('Error:', error));
@@ -164,46 +192,46 @@ if (isset($_GET['action']) && $_GET['action'] == 'edit' && isset($_GET['q_type']
     if ($conn && !empty($table_name) && $question_id > 0) {
         $stmt = null;
         if ($q_type_param == 'mcq') {
-            $sql = "SELECT question, optiona, optionb, optionc, optiond, answer, chapter_id FROM mcqdb WHERE id = ?";
+            $sql = "SELECT question, optiona, optionb, optionc, optiond, answer, chapter_id, topic_id FROM mcqdb WHERE id = ?";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("i", $question_id);
             $stmt->execute();
-            $stmt->bind_result($question_text, $mcq_option_a, $mcq_option_b, $mcq_option_c, $mcq_option_d, $mcq_answer, $chapter_id);
+            $stmt->bind_result($question_text, $mcq_option_a, $mcq_option_b, $mcq_option_c, $mcq_option_d, $mcq_answer, $chapter_id, $topic_id);
             $stmt->fetch();
         } elseif ($q_type_param == 'numerical') {
-            $sql = "SELECT question, answer, chapter_id FROM numericaldb WHERE id = ?";
+            $sql = "SELECT question, answer, chapter_id, topic_id FROM numericaldb WHERE id = ?";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("i", $question_id);
             $stmt->execute();
-            $stmt->bind_result($question_text, $numerical_answer, $chapter_id);
+            $stmt->bind_result($question_text, $numerical_answer, $chapter_id, $topic_id);
             $stmt->fetch();
         } elseif ($q_type_param == 'dropdown') {
-            $sql = "SELECT question, options, answer, chapter_id FROM dropdown WHERE id = ?";
+            $sql = "SELECT question, options, answer, chapter_id, topic_id FROM dropdown WHERE id = ?";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("i", $question_id);
             $stmt->execute();
-            $stmt->bind_result($question_text, $dropdown_options, $dropdown_answer_serial, $chapter_id);
+            $stmt->bind_result($question_text, $dropdown_options, $dropdown_answer_serial, $chapter_id, $topic_id);
             $stmt->fetch();
         } elseif ($q_type_param == 'fill') {
-            $sql = "SELECT question, options, answer, chapter_id FROM fillintheblanks WHERE id = ?";
+            $sql = "SELECT question, options, answer, chapter_id, topic_id FROM fillintheblanks WHERE id = ?";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("i", $question_id);
             $stmt->execute();
-            $stmt->bind_result($question_text, $fill_options, $fill_answer, $chapter_id);
+            $stmt->bind_result($question_text, $fill_options, $fill_answer, $chapter_id, $topic_id);
             $stmt->fetch();
         } elseif ($q_type_param == 'short') { // Assuming 'answer' column for short answers
-            $sql = "SELECT question, answer, chapter_id FROM shortanswer WHERE id = ?";
+            $sql = "SELECT question, answer, chapter_id, topic_id FROM shortanswer WHERE id = ?";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("i", $question_id);
             $stmt->execute();
-            $stmt->bind_result($question_text, $short_answer_keywords, $chapter_id); // Use appropriate variable
+            $stmt->bind_result($question_text, $short_answer_keywords, $chapter_id, $topic_id); // Use appropriate variable
             $stmt->fetch();
         } elseif ($q_type_param == 'essay') { // Assuming 'answer' column for essay
-            $sql = "SELECT question, answer, chapter_id FROM essaydb WHERE id = ?";
+            $sql = "SELECT question, answer, chapter_id, topic_id FROM essaydb WHERE id = ?";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("i", $question_id);
             $stmt->execute();
-            $stmt->bind_result($question_text, $essay_answer_keywords, $chapter_id); // Use appropriate variable
+            $stmt->bind_result($question_text, $essay_answer_keywords, $chapter_id, $topic_id); // Use appropriate variable
             $stmt->fetch();
         }
         if ($stmt) {
@@ -275,6 +303,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $posted_question = $conn->real_escape_string(trim($question_text_fixed));
     
     $chapter_id = isset($_POST['chapter_id']) ? intval($_POST['chapter_id']) : null;
+    $topic_id = isset($_POST['topic_id']) && $_POST['topic_id'] !== '' ? intval($_POST['topic_id']) : null;
 
     $success = false;
     $error_message = '';
@@ -295,11 +324,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         $posted_option_d = $conn->real_escape_string(trim(fixEscapeSequences($_POST['optiond'])));
                         $posted_answer = $conn->real_escape_string(trim($_POST['answer']));
                         
-                        $sql = "UPDATE mcqdb SET question = ?, optiona = ?, optionb = ?, optionc = ?, optiond = ?, answer = ?, chapter_id = ? WHERE id = ?";
+                        $sql = "UPDATE mcqdb SET question = ?, optiona = ?, optionb = ?, optionc = ?, optiond = ?, answer = ?, chapter_id = ?, topic_id = ? WHERE id = ?";
                         $stmt = $conn->prepare($sql);
                         if ($stmt) {
-                            $stmt->bind_param("ssssssis", $posted_question, $posted_option_a, $posted_option_b, 
-                                            $posted_option_c, $posted_option_d, $posted_answer, $chapter_id, $question_id);
+                            $stmt->bind_param("ssssssisi", $posted_question, $posted_option_a, $posted_option_b,
+                                            $posted_option_c, $posted_option_d, $posted_answer, $chapter_id, $topic_id, $question_id);
                             $success = $stmt->execute();
                             if (!$success) {
                                 $error_message = $stmt->error;
@@ -310,10 +339,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         
                     case 'b': // Numerical
                         $posted_answer = $conn->real_escape_string(trim(fixEscapeSequences($_POST['answer'])));
-                        $sql = "UPDATE numericaldb SET question = ?, answer = ?, chapter_id = ? WHERE id = ?";
+                        $sql = "UPDATE numericaldb SET question = ?, answer = ?, chapter_id = ?, topic_id = ? WHERE id = ?";
                         $stmt = $conn->prepare($sql);
                         if ($stmt) {
-                            $stmt->bind_param("ssis", $posted_question, $posted_answer, $chapter_id, $question_id);
+                            $stmt->bind_param("ssisi", $posted_question, $posted_answer, $chapter_id, $topic_id, $question_id);
                             $success = $stmt->execute();
                             if (!$success) {
                                 $error_message = $stmt->error;
@@ -325,10 +354,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     case 'c': // Dropdown
                         $posted_option = $conn->real_escape_string(trim(fixEscapeSequences($_POST['option'] ?? '')));
                         $posted_answer = $conn->real_escape_string(trim(fixEscapeSequences($_POST['answer'] ?? '')));
-                        $sql = "UPDATE dropdown SET question = ?, options = ?, answer = ?, chapter_id = ? WHERE id = ?";
+                        $sql = "UPDATE dropdown SET question = ?, options = ?, answer = ?, chapter_id = ?, topic_id = ? WHERE id = ?";
                         $stmt = $conn->prepare($sql);
                         if ($stmt) {
-                            $stmt->bind_param("sssis", $posted_question, $posted_option, $posted_answer, $chapter_id, $question_id);
+                            $stmt->bind_param("sssisi", $posted_question, $posted_option, $posted_answer, $chapter_id, $topic_id, $question_id);
                             $success = $stmt->execute();
                             if (!$success) {
                                 $error_message = $stmt->error;
@@ -340,10 +369,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     case 'd': // Fill in the blanks
                         $posted_option = $conn->real_escape_string(trim(fixEscapeSequences($_POST['option'] ?? '')));
                         $posted_answer = $conn->real_escape_string(trim(fixEscapeSequences($_POST['answer'] ?? '')));
-                        $sql = "UPDATE fillintheblanks SET question = ?, options = ?, answer = ?, chapter_id = ? WHERE id = ?";
+                        $sql = "UPDATE fillintheblanks SET question = ?, options = ?, answer = ?, chapter_id = ?, topic_id = ? WHERE id = ?";
                         $stmt = $conn->prepare($sql);
                         if ($stmt) {
-                            $stmt->bind_param("sssis", $posted_question, $posted_option, $posted_answer, $chapter_id, $question_id);
+                            $stmt->bind_param("sssisi", $posted_question, $posted_option, $posted_answer, $chapter_id, $topic_id, $question_id);
                             $success = $stmt->execute();
                             if (!$success) {
                                 $error_message = $stmt->error;
@@ -354,10 +383,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         
                     case 'e': // Short answer
                         $posted_answer = $conn->real_escape_string(trim(fixEscapeSequences($_POST['answer'] ?? '')));
-                        $sql = "UPDATE shortanswer SET question = ?, answer = ?, chapter_id = ? WHERE id = ?";
+                        $sql = "UPDATE shortanswer SET question = ?, answer = ?, chapter_id = ?, topic_id = ? WHERE id = ?";
                         $stmt = $conn->prepare($sql);
                         if ($stmt) {
-                            $stmt->bind_param("ssis", $posted_question, $posted_answer, $chapter_id, $question_id);
+                            $stmt->bind_param("ssisi", $posted_question, $posted_answer, $chapter_id, $topic_id, $question_id);
                             $success = $stmt->execute();
                             if (!$success) {
                                 $error_message = $stmt->error;
@@ -368,10 +397,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         
                     case 'f': // Essay
                         $posted_answer = $conn->real_escape_string(trim(fixEscapeSequences($_POST['answer'] ?? '')));
-                        $sql = "UPDATE essaydb SET question = ?, answer = ?, chapter_id = ? WHERE id = ?";
+                        $sql = "UPDATE essaydb SET question = ?, answer = ?, chapter_id = ?, topic_id = ? WHERE id = ?";
                         $stmt = $conn->prepare($sql);
                         if ($stmt) {
-                            $stmt->bind_param("ssis", $posted_question, $posted_answer, $chapter_id, $question_id);
+                            $stmt->bind_param("ssisi", $posted_question, $posted_answer, $chapter_id, $topic_id, $question_id);
                             $success = $stmt->execute();
                             if (!$success) {
                                 $error_message = $stmt->error;
@@ -397,13 +426,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $posted_option_d = $conn->real_escape_string(trim(fixEscapeSequences($_POST['optiond'])));
                     $posted_answer = $conn->real_escape_string(trim($_POST['answer']));
                     
-                    $sql = "INSERT INTO mcqdb (question, optiona, optionb, optionc, optiond, answer, chapter_id) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?)";
+                    $sql = "INSERT INTO mcqdb (question, optiona, optionb, optionc, optiond, answer, chapter_id, topic_id)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
                     
                     $stmt = $conn->prepare($sql);
                     if ($stmt) {
-                        $stmt->bind_param("ssssssi", $posted_question, $posted_option_a, $posted_option_b, 
-                                        $posted_option_c, $posted_option_d, $posted_answer, $chapter_id);
+                        $stmt->bind_param("ssssssii", $posted_question, $posted_option_a, $posted_option_b,
+                                        $posted_option_c, $posted_option_d, $posted_answer, $chapter_id, $topic_id);
                         $success = $stmt->execute();
                         if (!$success) {
                             $error_message = $stmt->error;
@@ -414,10 +443,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                 case 'b': // Numerical
                     $posted_answer = $conn->real_escape_string(trim(fixEscapeSequences($_POST['answer'])));
-                    $sql = "INSERT INTO numericaldb (question, answer, chapter_id) VALUES (?, ?, ?)";
+                    $sql = "INSERT INTO numericaldb (question, answer, chapter_id, topic_id) VALUES (?, ?, ?, ?)";
                     $stmt = $conn->prepare($sql);
                     if ($stmt) {
-                        $stmt->bind_param("ssi", $posted_question, $posted_answer, $chapter_id);
+                        $stmt->bind_param("ssii", $posted_question, $posted_answer, $chapter_id, $topic_id);
                         $success = $stmt->execute();
                         if (!$success) {
                             $error_message = $stmt->error;
@@ -429,10 +458,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 case 'c': // Dropdown
                     $posted_option = $conn->real_escape_string(trim(fixEscapeSequences($_POST['option'] ?? '')));
                     $posted_answer = $conn->real_escape_string(trim(fixEscapeSequences($_POST['answer'] ?? '')));
-                    $sql = "INSERT INTO dropdown (question, options, answer, chapter_id) VALUES (?, ?, ?, ?)";
+                    $sql = "INSERT INTO dropdown (question, options, answer, chapter_id, topic_id) VALUES (?, ?, ?, ?, ?)";
                     $stmt = $conn->prepare($sql);
                     if ($stmt) {
-                        $stmt->bind_param("sssi", $posted_question, $posted_option, $posted_answer, $chapter_id);
+                        $stmt->bind_param("sssii", $posted_question, $posted_option, $posted_answer, $chapter_id, $topic_id);
                         $success = $stmt->execute();
                         if (!$success) {
                             $error_message = $stmt->error;
@@ -444,10 +473,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 case 'd': // Fill in the blanks
                     $posted_option = $conn->real_escape_string(trim(fixEscapeSequences($_POST['option'] ?? '')));
                     $posted_answer = $conn->real_escape_string(trim(fixEscapeSequences($_POST['answer'] ?? '')));
-                    $sql = "INSERT INTO fillintheblanks (question, options, answer, chapter_id) VALUES (?, ?, ?, ?)";
+                    $sql = "INSERT INTO fillintheblanks (question, options, answer, chapter_id, topic_id) VALUES (?, ?, ?, ?, ?)";
                     $stmt = $conn->prepare($sql);
                     if ($stmt) {
-                        $stmt->bind_param("sssi", $posted_question, $posted_option, $posted_answer, $chapter_id);
+                        $stmt->bind_param("sssii", $posted_question, $posted_option, $posted_answer, $chapter_id, $topic_id);
                         $success = $stmt->execute();
                         if (!$success) {
                             $error_message = $stmt->error;
@@ -458,10 +487,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     
                 case 'e': // Short answer
                     $posted_answer = $conn->real_escape_string(trim(fixEscapeSequences($_POST['answer'] ?? '')));
-                    $sql = "INSERT INTO shortanswer (question, answer, chapter_id) VALUES (?, ?, ?)";
+                    $sql = "INSERT INTO shortanswer (question, answer, chapter_id, topic_id) VALUES (?, ?, ?, ?)";
                     $stmt = $conn->prepare($sql);
                     if ($stmt) {
-                        $stmt->bind_param("ssi", $posted_question, $posted_answer, $chapter_id);
+                        $stmt->bind_param("ssii", $posted_question, $posted_answer, $chapter_id, $topic_id);
                         $success = $stmt->execute();
                         if (!$success) {
                             $error_message = $stmt->error;
@@ -472,10 +501,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     
                 case 'f': // Essay
                     $posted_answer = $conn->real_escape_string(trim(fixEscapeSequences($_POST['answer'] ?? '')));
-                    $sql = "INSERT INTO essaydb (question, answer, chapter_id) VALUES (?, ?, ?)";
+                    $sql = "INSERT INTO essaydb (question, answer, chapter_id, topic_id) VALUES (?, ?, ?, ?)";
                     $stmt = $conn->prepare($sql);
                     if ($stmt) {
-                        $stmt->bind_param("ssi", $posted_question, $posted_answer, $chapter_id);
+                        $stmt->bind_param("ssii", $posted_question, $posted_answer, $chapter_id, $topic_id);
                         $success = $stmt->execute();
                         if (!$success) {
                             $error_message = $stmt->error;
@@ -1494,6 +1523,19 @@ function getChapters($conn, $class_id, $subject_id) {
                                   </div>
                               </div>
                             </div>
+                            <div class="row mt-2">
+                              <div class="col-md-4">
+                                <div class="form-group mb-0">
+                                  <label for="topic_id_mcq">Topic (Optional)</label>
+                                  <select name="topic_id" id="topic_id_mcq" class="form-control" onchange="loadQuestionFeedTopics('mcq')">
+                                    <option value="">Select Topic</option>
+                                    <?php if ($edit_mode && isset($topic_id)): ?>
+                                    <option value="<?php echo htmlspecialchars($topic_id); ?>" selected>Current Topic</option>
+                                    <?php endif; ?>
+                                  </select>
+                                </div>
+                              </div>
+                            </div>
                             <div class="text-center mt-3">
                                 <button type="submit" class="btn btn-primary btn-round form-submit-button"><?php echo $submit_button_text; ?></button>
                             </div>
@@ -1545,11 +1587,24 @@ function getChapters($conn, $class_id, $subject_id) {
                               <div class="col-md-4">
                                 <div class="form-group mb-0">
                                   <label for="chapter_id_num">Chapter</label>
-                                  <select name="chapter_id" id="chapter_id_num" class="form-control" required>
+                                  <select name="chapter_id" id="chapter_id_num" class="form-control" onchange="loadQuestionFeedTopics('num')" required>
                                     <option value="">Select Chapter</option>
                                     <!-- Chapters will be loaded dynamically -->
                                     <?php if ($edit_mode && isset($chapter_id)): ?>
                                       <option value="<?php echo htmlspecialchars($chapter_id); ?>" selected>Current Chapter</option>
+                                    <?php endif; ?>
+                                  </select>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="row mt-2">
+                              <div class="col-md-4">
+                                <div class="form-group mb-0">
+                                  <label for="topic_id_num">Topic (Optional)</label>
+                                  <select name="topic_id" id="topic_id_num" class="form-control">
+                                    <option value="">Select Topic</option>
+                                    <?php if ($edit_mode && isset($topic_id)): ?>
+                                    <option value="<?php echo htmlspecialchars($topic_id); ?>" selected>Current Topic</option>
                                     <?php endif; ?>
                                   </select>
                                 </div>
@@ -1610,11 +1665,24 @@ function getChapters($conn, $class_id, $subject_id) {
                               <div class="col-md-4">
                                 <div class="form-group mb-0">
                                   <label for="chapter_id_c">Chapter</label>
-                                  <select name="chapter_id" id="chapter_id_c" class="form-control" required>
+                                  <select name="chapter_id" id="chapter_id_c" class="form-control" onchange="loadQuestionFeedTopics('c')" required>
                                     <option value="">Select Chapter</option>
                                     <!-- Chapters will be loaded dynamically -->
                                     <?php if ($edit_mode && isset($chapter_id)): ?>
                                       <option value="<?php echo htmlspecialchars($chapter_id); ?>" selected>Current Chapter</option>
+                                    <?php endif; ?>
+                                  </select>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="row mt-2">
+                              <div class="col-md-4">
+                                <div class="form-group mb-0">
+                                  <label for="topic_id_c">Topic (Optional)</label>
+                                  <select name="topic_id" id="topic_id_c" class="form-control">
+                                    <option value="">Select Topic</option>
+                                    <?php if ($edit_mode && isset($topic_id)): ?>
+                                    <option value="<?php echo htmlspecialchars($topic_id); ?>" selected>Current Topic</option>
                                     <?php endif; ?>
                                   </select>
                                 </div>
@@ -1675,11 +1743,24 @@ function getChapters($conn, $class_id, $subject_id) {
                               <div class="col-md-4">
                                 <div class="form-group mb-0">
                                   <label for="chapter_id_d">Chapter</label>
-                                  <select name="chapter_id" id="chapter_id_d" class="form-control" required>
+                                  <select name="chapter_id" id="chapter_id_d" class="form-control" onchange="loadQuestionFeedTopics('d')" required>
                                     <option value="">Select Chapter</option>
                                     <!-- Chapters will be loaded dynamically -->
                                     <?php if ($edit_mode && isset($chapter_id)): ?>
                                       <option value="<?php echo htmlspecialchars($chapter_id); ?>" selected>Current Chapter</option>
+                                    <?php endif; ?>
+                                  </select>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="row mt-2">
+                              <div class="col-md-4">
+                                <div class="form-group mb-0">
+                                  <label for="topic_id_d">Topic (Optional)</label>
+                                  <select name="topic_id" id="topic_id_d" class="form-control">
+                                    <option value="">Select Topic</option>
+                                    <?php if ($edit_mode && isset($topic_id)): ?>
+                                    <option value="<?php echo htmlspecialchars($topic_id); ?>" selected>Current Topic</option>
                                     <?php endif; ?>
                                   </select>
                                 </div>
@@ -1736,11 +1817,24 @@ function getChapters($conn, $class_id, $subject_id) {
                               <div class="col-md-4">
                                 <div class="form-group mb-0">
                                   <label for="chapter_id_e">Chapter</label>
-                                  <select name="chapter_id" id="chapter_id_e" class="form-control" required>
+                                  <select name="chapter_id" id="chapter_id_e" class="form-control" onchange="loadQuestionFeedTopics('e')" required>
                                     <option value="">Select Chapter</option>
                                     <!-- Chapters will be loaded dynamically -->
                                     <?php if ($edit_mode && isset($chapter_id)): ?>
                                       <option value="<?php echo htmlspecialchars($chapter_id); ?>" selected>Current Chapter</option>
+                                    <?php endif; ?>
+                                  </select>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="row mt-2">
+                              <div class="col-md-4">
+                                <div class="form-group mb-0">
+                                  <label for="topic_id_e">Topic (Optional)</label>
+                                  <select name="topic_id" id="topic_id_e" class="form-control">
+                                    <option value="">Select Topic</option>
+                                    <?php if ($edit_mode && isset($topic_id)): ?>
+                                    <option value="<?php echo htmlspecialchars($topic_id); ?>" selected>Current Topic</option>
                                     <?php endif; ?>
                                   </select>
                                 </div>
@@ -1797,11 +1891,24 @@ function getChapters($conn, $class_id, $subject_id) {
                               <div class="col-md-4">
                                 <div class="form-group mb-0">
                                   <label for="chapter_id_f">Chapter</label>
-                                  <select name="chapter_id" id="chapter_id_f" class="form-control" required>
+                                  <select name="chapter_id" id="chapter_id_f" class="form-control" onchange="loadQuestionFeedTopics('f')" required>
                                     <option value="">Select Chapter</option>
                                     <!-- Chapters will be loaded dynamically -->
                                     <?php if ($edit_mode && isset($chapter_id)): ?>
                                       <option value="<?php echo htmlspecialchars($chapter_id); ?>" selected>Current Chapter</option>
+                                    <?php endif; ?>
+                                  </select>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="row mt-2">
+                              <div class="col-md-4">
+                                <div class="form-group mb-0">
+                                  <label for="topic_id_f">Topic (Optional)</label>
+                                  <select name="topic_id" id="topic_id_f" class="form-control">
+                                    <option value="">Select Topic</option>
+                                    <?php if ($edit_mode && isset($topic_id)): ?>
+                                    <option value="<?php echo htmlspecialchars($topic_id); ?>" selected>Current Topic</option>
                                     <?php endif; ?>
                                   </select>
                                 </div>
@@ -1964,7 +2071,9 @@ function getChapters($conn, $class_id, $subject_id) {
         var classDropdown = $('#class_id_' + typeForJSOnLoad);
         var subjectDropdown = $('#subject_id_' + typeForJSOnLoad);
         var chapterDropdown = $('#chapter_id_' + typeForJSOnLoad);
+        var topicDropdown = $('#topic_id_' + typeForJSOnLoad);
         var chapterValue = '<?php echo isset($chapter_id) ? htmlspecialchars($chapter_id) : ""; ?>';
+        var topicValue = '<?php echo isset($topic_id) ? htmlspecialchars($topic_id) : ""; ?>';
 
         if (chapterValue) {
           <?php if ($edit_mode && isset($chapter_id) && $chapter_id > 0): ?>
@@ -1983,9 +2092,10 @@ function getChapters($conn, $class_id, $subject_id) {
                 // Now load chapters with these values
                 loadQuestionFeedChapters(typeForJSOnLoad);
                 
-                // After chapters load, set the selected chapter
+                // After chapters load, set the selected chapter and topics
                 setTimeout(function() {
                   chapterDropdown.val(chapterValue);
+                  loadQuestionFeedTopics(typeForJSOnLoad, topicValue);
                 }, 500);
               }
             },
@@ -2006,6 +2116,7 @@ function getChapters($conn, $class_id, $subject_id) {
               var selectedChapter = chapterDropdown.data('selected-chapter');
               if(selectedChapter){
                 chapterDropdown.val(selectedChapter);
+                loadQuestionFeedTopics(typeForJSOnLoad, topicValue);
               }
             }, 500);
           }
