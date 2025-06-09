@@ -705,7 +705,9 @@ function saveSelectedQuestions() {
 }
 
 // Reload questions when topic filter in modal changes
-$('#modal_topic_ids').on('change', function() {
+// Use event delegation to ensure handler works even if the select is
+// re-initialized by Select2 when the modal opens
+$(document).on('change', '#modal_topic_ids', function() {
     var chapterIds = $('#chapter_ids').val();
     var topicIds = $('#modal_topic_ids').val();
     $('.questions-list').html('<div class="text-center"><i class="fa fa-spinner fa-spin"></i> Loading questions...</div>');
