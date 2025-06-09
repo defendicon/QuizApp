@@ -91,6 +91,14 @@ INSERT INTO `classes` (`class_id`, `class_name`, `instructor_email`, `created_at
 (4, '1st Year', 'test@test.com', '2025-05-15 15:05:29', '2025-05-15 15:05:29'),
 (6, '2nd Year', 'test@test.com', '2025-05-16 11:55:23', '2025-05-16 11:55:23');
 
+
+--
+-- Indexes for table `classes`
+--
+ALTER TABLE `classes`
+  ADD PRIMARY KEY (`class_id`),
+  ADD KEY `instructor_email` (`instructor_email`);
+
 -- --------------------------------------------------------
 
 --
@@ -501,14 +509,6 @@ ALTER TABLE `chapters`
   ADD UNIQUE KEY `uk_class_chapter_name` (`class_id`,`subject_id`,`chapter_name`),
   ADD KEY `idx_fk_class_id` (`class_id`),
   ADD KEY `idx_fk_subject_id` (`subject_id`);
-
---
--- Indexes for table `classes`
---
-ALTER TABLE `classes`
-  ADD PRIMARY KEY (`class_id`),
-  ADD KEY `instructor_email` (`instructor_email`);
-
 --
 -- Indexes for table `dropdown`
 --
