@@ -108,27 +108,6 @@ function loadSections() {
     }
 }
 
-function loadTopics() {
-    var chapterIds = $('#chapter_ids').val();
-    var topicSelect = document.getElementById('topic_ids');
-    if(!topicSelect) return;
-    topicSelect.innerHTML = '<option value="">Select Topics</option>';
-    if(chapterIds && chapterIds.length > 0) {
-        fetch('get_topics.php?chapter_ids=' + chapterIds.join(','))
-            .then(response => response.json())
-            .then(data => {
-                data.forEach(function(topic){
-                    topicSelect.innerHTML += '<option value="' + topic.topic_id + '">' + topic.topic_name + '</option>';
-                });
-                $(topicSelect).select2();
-            })
-            .catch(error => console.error('Error:', error));
-    } else {
-        $(topicSelect).select2();
-    }
-}
-</script>
-<?php
 
 // Get next quiz number
 $query = "SELECT MAX(quiznumber) as max_quiz FROM quizconfig";
@@ -188,12 +167,8 @@ function getAvailableQuestionsCount($conn, $chapter_ids) {
 echo "<script>
 function updateAvailableQuestions() {
     var chapterIds = $('#chapter_ids').val();
-    var topicIds = $('#topic_ids').val();
     if(chapterIds && chapterIds.length > 0) {
         var url = 'get_question_counts.php?chapter_ids=' + chapterIds.join(',');
-        if(topicIds && topicIds.length > 0) {
-            url += '&topic_ids=' + topicIds.join(',');
-        }
         fetch(url)
             .then(response => response.json())
             .then(data => {
@@ -229,12 +204,7 @@ $('#chapter_ids').on('change', function() {
         $('#selectQuestionsBtn').hide();
     }
     
-    // Update topics and question count info when chapters are selected
-    loadTopics();
-    updateAvailableQuestions();
-});
-
-$('#topic_ids').on('change', function() {
+    // Update available question info when chapters are selected
     updateAvailableQuestions();
 });
 
@@ -255,7 +225,7 @@ $('#random_quiz_checkbox').on('change', function() {
 echo "<script>
 $(document).ready(function() {
   // Initialize Select2 for all dropdowns
-  $('#subject_id, #class_id, #chapter_ids, #section_id, #topic_ids, #modal_topic_ids').select2({
+  $('#subject_id, #class_id, #chapter_ids, #section_id, #modal_topic_ids').select2({
     width: '100%',
     minimumResultsForSearch: 10
   });
@@ -345,7 +315,7 @@ function loadModalTopics(chapterIds, selectedTopics) {
 // Function to open question selector modal
 function openQuestionSelector() {
     var chapterIds = $('#chapter_ids').val();
-    var topicIds = $('#topic_ids').val();
+    var topicIds = [];
 
     if(!chapterIds || chapterIds.length === 0) {
         alert('Please select chapters first to load questions');
@@ -353,7 +323,7 @@ function openQuestionSelector() {
     }
 
     // Load topics dropdown inside modal
-    loadModalTopics(chapterIds, topicIds);
+    loadModalTopics(chapterIds, []);
     
     // Show loading indicator
     $('.questions-list').html('<div class=\"text-center\"><i class=\"fa fa-spinner fa-spin\"></i> Loading questions...</div>');
@@ -375,12 +345,12 @@ function openQuestionSelector() {
     marks(); // Update total marks display
     
     // Load questions for each type
-    loadQuestionsByType('mcq', 'mcqQuestions', chapterIds, topicIds);
-    loadQuestionsByType('numerical', 'numericalQuestions', chapterIds, topicIds);
-    loadQuestionsByType('dropdown', 'dropdownQuestions', chapterIds, topicIds);
-    loadQuestionsByType('fillblanks', 'fillblanksQuestions', chapterIds, topicIds);
-    loadQuestionsByType('short', 'shortQuestions', chapterIds, topicIds);
-    loadQuestionsByType('essay', 'essayQuestions', chapterIds, topicIds);
+    loadQuestionsByType('mcq', 'mcqQuestions', chapterIds, []);
+    loadQuestionsByType('numerical', 'numericalQuestions', chapterIds, []);
+    loadQuestionsByType('dropdown', 'dropdownQuestions', chapterIds, []);
+    loadQuestionsByType('fillblanks', 'fillblanksQuestions', chapterIds, []);
+    loadQuestionsByType('short', 'shortQuestions', chapterIds, []);
+    loadQuestionsByType('essay', 'essayQuestions', chapterIds, []);
     
     // Show the modal
     $('#questionSelectorModal').modal('show');
@@ -1305,17 +1275,6 @@ $('#modal_topic_ids').on('change', function() {
                   </div>
                 </div>
 
-                <!-- Topics Selection -->
-                <div class="row form-row-mobile mt-3">
-                  <div class="col-md-3 col-12 mb-2">
-                    <p class="h5 mobile-text-center">Topics (Optional)</p>
-                  </div>
-                  <div class="col-md-9 col-12">
-                    <select name="topic_ids[]" id="topic_ids" class="form-control mobile-full-width" multiple>
-                      <option value="">Select Topics</option>
-                    </select>
-                  </div>
-                </div>
 
                 <!-- Question Selection Modal -->
                 <div class="modal fade" id="questionSelectorModal" tabindex="-1" role="dialog">
@@ -2015,7 +1974,7 @@ $('#modal_topic_ids').on('change', function() {
   <script>    
     $(document).ready(function() {
       // Existing Select2 initialization
-      $('#subject_id, #class_id, #chapter_ids, #section_id, #topic_ids').select2({
+      $('#subject_id, #class_id, #chapter_ids, #section_id').select2({
         width: '100%',
         minimumResultsForSearch: 10
       });
