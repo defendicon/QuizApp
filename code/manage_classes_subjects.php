@@ -261,6 +261,45 @@ if (isset($_POST['action'])) {
             $stmt->close();
         }
     }
+    elseif ($_POST['action'] === 'add_topic' && !empty($_POST['topic_name']) && !empty($_POST['chapter_id'])) {
+        $topic_name = $conn->real_escape_string(trim($_POST['topic_name']));
+        $chapter_id = intval($_POST['chapter_id']);
+
+        // Check if topic already exists for this chapter
+        $check_sql = "SELECT COUNT(*) FROM topics WHERE chapter_id = ? AND topic_name = ?";
+        $check_stmt = $conn->prepare($check_sql);
+        $check_stmt->bind_param("is", $chapter_id, $topic_name);
+        $check_stmt->execute();
+        $check_stmt->bind_result($count);
+        $check_stmt->fetch();
+        $check_stmt->close();
+
+        if ($count > 0) {
+            $feedback_message = '<div class="alert alert-warning">Topic already exists for this chapter.</div>';
+        } else {
+            $sql = "INSERT INTO topics (chapter_id, topic_name) VALUES (?, ?)";
+            $stmt = $conn->prepare($sql);
+            $stmt->bind_param("is", $chapter_id, $topic_name);
+            if ($stmt->execute()) {
+                $feedback_message = '<div class="alert alert-success">Topic added successfully!</div>';
+            } else {
+                $feedback_message = '<div class="alert alert-danger">Error adding topic: ' . $stmt->error . '</div>';
+            }
+            $stmt->close();
+        }
+    }
+    elseif ($_POST['action'] === 'delete_topic' && !empty($_POST['topic_id'])) {
+        $topic_id = intval($_POST['topic_id']);
+        $sql = "DELETE FROM topics WHERE topic_id = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $topic_id);
+        if ($stmt->execute()) {
+            $feedback_message = '<div class="alert alert-success">Topic deleted successfully!</div>';
+        } else {
+            $feedback_message = '<div class="alert alert-danger">Error deleting topic: ' . $stmt->error . '</div>';
+        }
+        $stmt->close();
+    }
 }
 
 // Fetch existing classes with filtering
@@ -407,6 +446,25 @@ if ($result_chapters) {
     }
 }
 $stmt->close();
+
+// Fetch all chapters for topic dropdown
+$all_chapters = [];
+$chap_result = $conn->query("SELECT chapter_id, chapter_name FROM chapters ORDER BY chapter_number");
+if ($chap_result) {
+    while ($row = $chap_result->fetch_assoc()) {
+        $all_chapters[] = $row;
+    }
+}
+
+// Fetch existing topics
+$topics = [];
+$topic_sql = "SELECT t.topic_id, t.topic_name, c.chapter_name FROM topics t JOIN chapters c ON t.chapter_id = c.chapter_id ORDER BY c.chapter_number, t.topic_name";
+$topic_result = $conn->query($topic_sql);
+if ($topic_result) {
+    while ($row = $topic_result->fetch_assoc()) {
+        $topics[] = $row;
+    }
+}
 
 // Fetch existing sections with class information and filtering
 $class_sections = [];
@@ -1034,7 +1092,43 @@ $stmt->close();
                         </div>
                     </div>
                 </div>
-                
+
+                <!-- Add Topic -->
+                <div class="section">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header card-header-primary">
+                                    <h4 class="card-title">Add New Topic</h4>
+                                </div>
+                                <div class="card-body">
+                                    <form class="add-form" method="post">
+                                        <input type="hidden" name="action" value="add_topic">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <select class="form-control" name="chapter_id" required>
+                                                    <option value="">Select Chapter</option>
+                                                    <?php foreach ($all_chapters as $chap): ?>
+                                                    <option value="<?php echo $chap['chapter_id']; ?>"><?php echo htmlspecialchars($chap['chapter_name']); ?></option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" name="topic_name" placeholder="Enter topic name" required>
+                                                    <div class="input-group-append">
+                                                        <button type="submit" class="btn btn-primary">Add Topic</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Chapters Management -->
                 <div class="col-md-12">
                     <div class="card">
@@ -1131,6 +1225,45 @@ $stmt->close();
                                     </ul>
                                 </nav>
                                 <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Topics Management -->
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header card-header-primary">
+                            <h4 class="card-title">Manage Topics</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Chapter</th>
+                                            <th>Topic</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($topics as $topic): ?>
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($topic['chapter_name']); ?></td>
+                                            <td><?php echo htmlspecialchars($topic['topic_name']); ?></td>
+                                            <td>
+                                                <form method="post" style="display: inline;">
+                                                    <input type="hidden" name="action" value="delete_topic">
+                                                    <input type="hidden" name="topic_id" value="<?php echo $topic['topic_id']; ?>">
+                                                    <button type="submit" class="btn btn-link text-danger" onclick="return confirm('Are you sure you want to delete this topic?');">
+                                                        <i class="material-icons">delete</i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
