@@ -1265,6 +1265,18 @@ function saveSelectedQuestions() {
                   </div>
                 </div>
 
+                <!-- Topics Selection -->
+                <div class="row form-row-mobile mt-3">
+                  <div class="col-md-3 col-12 mb-2">
+                    <p class="h5 mobile-text-center">Topics (Optional)</p>
+                  </div>
+                  <div class="col-md-9 col-12">
+                    <select name="topic_ids[]" id="topic_ids" class="form-control mobile-full-width" multiple>
+                      <option value="">Select Topics</option>
+                    </select>
+                  </div>
+                </div>
+
                 <!-- Question Selection Modal -->
                 <div class="modal fade" id="questionSelectorModal" tabindex="-1" role="dialog">
                   <div class="modal-dialog modal-lg" role="document">
@@ -1493,17 +1505,6 @@ function saveSelectedQuestions() {
                 </div>
               </div>
 
-              <!-- Topics Selection -->
-              <div class="row form-row-mobile mt-3">
-                <div class="col-md-3 col-12 mb-2">
-                  <p class="h5 mobile-text-center">Topics (Optional)</p>
-                </div>
-                <div class="col-md-9 col-12">
-                  <select name="topic_ids[]" id="topic_ids" class="form-control mobile-full-width" multiple>
-                    <option value="">Select Topics</option>
-                  </select>
-                </div>
-              </div>
 
               <div class="text-center pb-4">
                 <button type="submit" class="btn btn-primary btn-round">Set Quiz</button>
@@ -1961,7 +1962,7 @@ function saveSelectedQuestions() {
   <script>    
     $(document).ready(function() {
       // Existing Select2 initialization
-      $('#subject_id, #class_id, #chapter_ids').select2({
+      $('#subject_id, #class_id, #chapter_ids, #section_id, #topic_ids').select2({
         width: '100%',
         minimumResultsForSearch: 10
       });
