@@ -1527,7 +1527,7 @@ function getChapters($conn, $class_id, $subject_id) {
                               <div class="col-md-4">
                                 <div class="form-group mb-0">
                                   <label for="topic_id_mcq">Topic (Optional)</label>
-                                  <select name="topic_id" id="topic_id_mcq" class="form-control" onchange="loadQuestionFeedTopics('mcq')">
+                                  <select name="topic_id" id="topic_id_mcq" class="form-control">
                                     <option value="">Select Topic</option>
                                     <?php if ($edit_mode && isset($topic_id)): ?>
                                     <option value="<?php echo htmlspecialchars($topic_id); ?>" selected>Current Topic</option>
