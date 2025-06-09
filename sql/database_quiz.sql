@@ -322,6 +322,7 @@ CREATE TABLE `quizconfig` (
   `total_questions` int(11) DEFAULT NULL,
   `class_id` int(11) DEFAULT NULL,
   `chapter_ids` text DEFAULT NULL,
+  `topic_ids` text DEFAULT NULL,
   `subject_id` int(11) DEFAULT NULL,
   `section` varchar(50) DEFAULT NULL COMMENT 'Target section for the quiz',
   `section_id` int(11) DEFAULT NULL,
@@ -332,12 +333,12 @@ CREATE TABLE `quizconfig` (
 -- Dumping data for table `quizconfig`
 --
 
-INSERT INTO `quizconfig` (`quizid`, `quiznumber`, `quizname`, `starttime`, `endtime`, `duration`, `attempts`, `mcq`, `numerical`, `dropdown`, `fill`, `short`, `essay`, `mcqmarks`, `numericalmarks`, `dropdownmarks`, `fillmarks`, `shortmarks`, `essaymarks`, `maxmarks`, `typea`, `typeamarks`, `typeb`, `typebmarks`, `typec`, `typecmarks`, `typed`, `typedmarks`, `typee`, `typeemarks`, `typef`, `typefmarks`, `total_questions`, `class_id`, `chapter_ids`, `subject_id`, `section`, `section_id`, `is_random`) VALUES
-(98, 1, '1st', '2025-05-18 21:01:00', '2025-05-19 21:01:00', 10, 1, 5, 0, 0, 0, 5, 0, 1, 0, 0, 0, 2, 0, 15, 5, 1, 0, 0, 0, 0, 0, 0, 5, 2, 0, 0, 10, 4, '6', 1, 'B', NULL, 1),
-(99, 2, '2nd', '2025-05-18 21:01:00', '2025-05-19 21:01:00', 10, 1, 5, 0, 0, 0, 5, 0, 1, 0, 0, 0, 2, 0, 15, 5, 1, 0, 0, 0, 0, 0, 0, 5, 2, 0, 0, 10, 4, '6', 1, 'B', NULL, 1),
-(100, 3, '3rd', '2025-05-18 21:02:00', '2025-05-19 21:02:00', 10, 1, 5, 0, 0, 0, 5, 0, 1, 0, 0, 0, 2, 0, 15, 5, 1, 0, 0, 0, 0, 0, 0, 5, 2, 0, 0, 10, 4, '6', 1, 'B', NULL, 1),
-(107, 4, '1st year chap 1', '2025-05-19 10:42:00', '2025-05-19 10:59:00', 10, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, '6,7', 1, 'B', NULL, 1),
-(108, 5, 'testing', '2025-06-09 15:25:00', '2025-06-10 15:25:00', 10, 1, 5, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 25, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 4, '6', 1, 'B', NULL, 1);
+INSERT INTO `quizconfig` (`quizid`, `quiznumber`, `quizname`, `starttime`, `endtime`, `duration`, `attempts`, `mcq`, `numerical`, `dropdown`, `fill`, `short`, `essay`, `mcqmarks`, `numericalmarks`, `dropdownmarks`, `fillmarks`, `shortmarks`, `essaymarks`, `maxmarks`, `typea`, `typeamarks`, `typeb`, `typebmarks`, `typec`, `typecmarks`, `typed`, `typedmarks`, `typee`, `typeemarks`, `typef`, `typefmarks`, `total_questions`, `class_id`, `chapter_ids`, `topic_ids`, `subject_id`, `section`, `section_id`, `is_random`) VALUES
+(98, 1, '1st', '2025-05-18 21:01:00', '2025-05-19 21:01:00', 10, 1, 5, 0, 0, 0, 5, 0, 1, 0, 0, 0, 2, 0, 15, 5, 1, 0, 0, 0, 0, 0, 0, 5, 2, 0, 0, 10, 4, '6', '', 1, 'B', NULL, 1),
+(99, 2, '2nd', '2025-05-18 21:01:00', '2025-05-19 21:01:00', 10, 1, 5, 0, 0, 0, 5, 0, 1, 0, 0, 0, 2, 0, 15, 5, 1, 0, 0, 0, 0, 0, 0, 5, 2, 0, 0, 10, 4, '6', '', 1, 'B', NULL, 1),
+(100, 3, '3rd', '2025-05-18 21:02:00', '2025-05-19 21:02:00', 10, 1, 5, 0, 0, 0, 5, 0, 1, 0, 0, 0, 2, 0, 15, 5, 1, 0, 0, 0, 0, 0, 0, 5, 2, 0, 0, 10, 4, '6', '', 1, 'B', NULL, 1),
+(107, 4, '1st year chap 1', '2025-05-19 10:42:00', '2025-05-19 10:59:00', 10, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, '6,7', '', 1, 'B', NULL, 1),
+(108, 5, 'testing', '2025-06-09 15:25:00', '2025-06-10 15:25:00', 10, 1, 5, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 25, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 4, '6', '', 1, 'B', NULL, 1);
 
 -- --------------------------------------------------------
 

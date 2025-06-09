@@ -24,6 +24,7 @@ if (!isset($_POST['type']) || !isset($_POST['chapter_ids'])) {
 
 $type = $_POST['type'];
 $chapter_ids = $_POST['chapter_ids'];
+$topic_ids = isset($_POST['topic_ids']) ? $_POST['topic_ids'] : [];
 
 logDebug("Processing request", ['type' => $type, 'chapter_ids' => $chapter_ids]);
 
@@ -32,11 +33,21 @@ if (!is_array($chapter_ids)) {
     $chapter_ids = explode(',', $chapter_ids);
 }
 $chapter_ids = array_filter($chapter_ids, 'is_numeric');
+if (!is_array($topic_ids)) {
+    $topic_ids = explode(',', $topic_ids);
+}
+$topic_ids = array_filter($topic_ids, 'is_numeric');
 
 if (empty($chapter_ids)) {
     logDebug("Invalid chapter IDs", $chapter_ids);
     echo json_encode(['error' => 'Invalid chapter IDs']);
     exit;
+}
+
+$topic_filter = '';
+if (!empty($topic_ids)) {
+    $topic_ids_str = implode(',', $topic_ids);
+    $topic_filter = " AND topic_id IN ($topic_ids_str)";
 }
 
 $chapter_ids_str = implode(',', $chapter_ids);
@@ -59,7 +70,7 @@ if (!isset($table_map[$type])) {
 }
 
 $table_info = $table_map[$type];
-$sql = "SELECT id, question FROM {$table_info['table']} WHERE chapter_id IN ($chapter_ids_str)";
+$sql = "SELECT id, question FROM {$table_info['table']} WHERE chapter_id IN ($chapter_ids_str)$topic_filter";
 logDebug("SQL Query", $sql);
 
 try {

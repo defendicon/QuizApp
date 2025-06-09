@@ -12,6 +12,16 @@ $chapter_ids = explode(',', $_GET['chapter_ids']);
 $chapter_ids = array_map('intval', $chapter_ids); // Sanitize input
 $chapter_ids_str = implode(',', $chapter_ids);
 
+$topic_ids = [];
+if (isset($_GET['topic_ids']) && strlen($_GET['topic_ids']) > 0) {
+    $topic_ids = array_map('intval', explode(',', $_GET['topic_ids']));
+}
+$topic_filter = '';
+if (!empty($topic_ids)) {
+    $topic_ids_str = implode(',', $topic_ids);
+    $topic_filter = " AND topic_id IN ($topic_ids_str)";
+}
+
 $counts = array(
     'mcq' => 0,
     'numerical' => 0,
@@ -23,32 +33,32 @@ $counts = array(
 
 if (!empty($chapter_ids)) {
     // Count MCQs
-    $sql = "SELECT COUNT(*) as count FROM mcqdb WHERE chapter_id IN ($chapter_ids_str)";
+    $sql = "SELECT COUNT(*) as count FROM mcqdb WHERE chapter_id IN ($chapter_ids_str)$topic_filter";
     $result = $conn->query($sql);
     $counts['mcq'] = (int)$result->fetch_assoc()['count'];
     
     // Count Numerical
-    $sql = "SELECT COUNT(*) as count FROM numericaldb WHERE chapter_id IN ($chapter_ids_str)";
+    $sql = "SELECT COUNT(*) as count FROM numericaldb WHERE chapter_id IN ($chapter_ids_str)$topic_filter";
     $result = $conn->query($sql);
     $counts['numerical'] = (int)$result->fetch_assoc()['count'];
     
     // Count Dropdown
-    $sql = "SELECT COUNT(*) as count FROM dropdown WHERE chapter_id IN ($chapter_ids_str)";
+    $sql = "SELECT COUNT(*) as count FROM dropdown WHERE chapter_id IN ($chapter_ids_str)$topic_filter";
     $result = $conn->query($sql);
     $counts['dropdown'] = (int)$result->fetch_assoc()['count'];
     
     // Count Fill in Blanks
-    $sql = "SELECT COUNT(*) as count FROM fillintheblanks WHERE chapter_id IN ($chapter_ids_str)";
+    $sql = "SELECT COUNT(*) as count FROM fillintheblanks WHERE chapter_id IN ($chapter_ids_str)$topic_filter";
     $result = $conn->query($sql);
     $counts['fillblanks'] = (int)$result->fetch_assoc()['count'];
     
     // Count Short Answer
-    $sql = "SELECT COUNT(*) as count FROM shortanswer WHERE chapter_id IN ($chapter_ids_str)";
+    $sql = "SELECT COUNT(*) as count FROM shortanswer WHERE chapter_id IN ($chapter_ids_str)$topic_filter";
     $result = $conn->query($sql);
     $counts['short'] = (int)$result->fetch_assoc()['count'];
     
     // Count Essay
-    $sql = "SELECT COUNT(*) as count FROM essay WHERE chapter_id IN ($chapter_ids_str)";
+    $sql = "SELECT COUNT(*) as count FROM essay WHERE chapter_id IN ($chapter_ids_str)$topic_filter";
     $result = $conn->query($sql);
     $counts['essay'] = (int)$result->fetch_assoc()['count'];
 }

@@ -79,7 +79,7 @@ if (isset($_SESSION['quiz_started']) && $_SESSION['quiz_started'] === true) {
     echo "<pre style='background-color: #ddddff; border: 1px solid #0000cc; padding: 10px; margin: 10px;'><strong>DEBUG: Quiz not started in session. Attempting to initialize a new quiz.</strong><br>SESSION: " . htmlspecialchars(print_r($_SESSION, true)) . "</pre>";
     try {
         // Check for active quiz
-        $sql = "SELECT qc.*, c.class_name, s.subject_name,
+        $sql = "SELECT qc.*, qc.topic_ids, c.class_name, s.subject_name,
                 (SELECT COUNT(*) FROM quizrecord qr WHERE qr.quizid = qc.quizid AND qr.rollnumber = ?) as attempt_count,
                 (SELECT COUNT(*) FROM response r WHERE r.quizid = qc.quizid AND r.rollnumber = ? AND r.attempt = (
                     SELECT COUNT(*) FROM quizrecord qr2 WHERE qr2.quizid = qc.quizid AND qr2.rollnumber = ?
@@ -247,11 +247,15 @@ if (isset($_SESSION['quiz_started']) && $_SESSION['quiz_started'] === true) {
             }
             
             $chapter_ids_str = implode(',', $chapter_ids);
+
+            $topic_ids = !empty($quiz['topic_ids']) ? explode(',', $quiz['topic_ids']) : array();
+            $topic_ids = array_filter($topic_ids, 'is_numeric');
+            $topic_ids_str = implode(',', $topic_ids);
             
             logDebug("Quiz is_random flag", ['is_random' => $quiz['is_random']]);
             
             // Function to get questions of a specific type
-            function getQuestions($conn, $type, $count, $chapter_ids_str) {
+            function getQuestions($conn, $type, $count, $chapter_ids_str, $topic_ids_str = '') {
                 $questions = array();
                 if ($count > 0) {
                     $table = '';
@@ -270,7 +274,11 @@ if (isset($_SESSION['quiz_started']) && $_SESSION['quiz_started'] === true) {
                         throw new Exception("No valid chapters found");
                     }
                     
-                    $sql = "SELECT id FROM $table WHERE chapter_id IN ($chapter_ids_str) ORDER BY RAND() LIMIT ?";
+                    $sql = "SELECT id FROM $table WHERE chapter_id IN ($chapter_ids_str)";
+                    if (!empty($topic_ids_str)) {
+                        $sql .= " AND topic_id IN ($topic_ids_str)";
+                    }
+                    $sql .= " ORDER BY RAND() LIMIT ?";
                     logDebug("Fetching questions for type: $type. SQL: " . preg_replace('/\s+/', ' ', $sql), array('count' => $count, 'chapters' => $chapter_ids_str));
                     $stmt = $conn->prepare($sql);
                     if (!$stmt) {
@@ -337,12 +345,12 @@ if (isset($_SESSION['quiz_started']) && $_SESSION['quiz_started'] === true) {
                         // Fallback to generating random questions if none are preselected
                         logDebug("No preselected questions found, generating random questions");
                         $questions = array_merge(
-                            getQuestions($conn, 'a', $quiz['typea'], $chapter_ids_str),
-                            getQuestions($conn, 'b', $quiz['typeb'], $chapter_ids_str),
-                            getQuestions($conn, 'c', $quiz['typec'], $chapter_ids_str),
-                            getQuestions($conn, 'd', $quiz['typed'], $chapter_ids_str),
-                            getQuestions($conn, 'e', $quiz['typee'], $chapter_ids_str),
-                            getQuestions($conn, 'f', $quiz['typef'], $chapter_ids_str)
+                            getQuestions($conn, 'a', $quiz['typea'], $chapter_ids_str, $topic_ids_str),
+                            getQuestions($conn, 'b', $quiz['typeb'], $chapter_ids_str, $topic_ids_str),
+                            getQuestions($conn, 'c', $quiz['typec'], $chapter_ids_str, $topic_ids_str),
+                            getQuestions($conn, 'd', $quiz['typed'], $chapter_ids_str, $topic_ids_str),
+                            getQuestions($conn, 'e', $quiz['typee'], $chapter_ids_str, $topic_ids_str),
+                            getQuestions($conn, 'f', $quiz['typef'], $chapter_ids_str, $topic_ids_str)
                         );
                     }
                 } else {
@@ -379,12 +387,12 @@ if (isset($_SESSION['quiz_started']) && $_SESSION['quiz_started'] === true) {
                         // Fallback to generating random questions if none are found (this should not happen for manual selection)
                         logDebug("No manually selected questions found, falling back to random selection");
                         $questions = array_merge(
-                            getQuestions($conn, 'a', $quiz['typea'], $chapter_ids_str),
-                            getQuestions($conn, 'b', $quiz['typeb'], $chapter_ids_str),
-                            getQuestions($conn, 'c', $quiz['typec'], $chapter_ids_str),
-                            getQuestions($conn, 'd', $quiz['typed'], $chapter_ids_str),
-                            getQuestions($conn, 'e', $quiz['typee'], $chapter_ids_str),
-                            getQuestions($conn, 'f', $quiz['typef'], $chapter_ids_str)
+                            getQuestions($conn, 'a', $quiz['typea'], $chapter_ids_str, $topic_ids_str),
+                            getQuestions($conn, 'b', $quiz['typeb'], $chapter_ids_str, $topic_ids_str),
+                            getQuestions($conn, 'c', $quiz['typec'], $chapter_ids_str, $topic_ids_str),
+                            getQuestions($conn, 'd', $quiz['typed'], $chapter_ids_str, $topic_ids_str),
+                            getQuestions($conn, 'e', $quiz['typee'], $chapter_ids_str, $topic_ids_str),
+                            getQuestions($conn, 'f', $quiz['typef'], $chapter_ids_str, $topic_ids_str)
                         );
                     }
                 }
