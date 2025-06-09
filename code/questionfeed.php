@@ -1513,7 +1513,7 @@ function getChapters($conn, $class_id, $subject_id) {
                               <div class="col-md-4">
                                   <div class="form-group mb-0">
                                       <label for="chapter_id_mcq">Chapter</label>
-                                      <select name="chapter_id" id="chapter_id_mcq" class="form-control" required>
+                                        <select name="chapter_id" id="chapter_id_mcq" class="form-control" onchange="loadQuestionFeedTopics('mcq')" required>
                                           <option value="">Select Chapter</option>
                                           <!-- Chapters will be loaded dynamically -->
                                           <?php if ($edit_mode && isset($chapter_id)): ?>
