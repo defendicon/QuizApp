@@ -33,7 +33,8 @@ if ($result_classes && $result_classes->num_rows > 0) {
 $sections = [];
 
 // Add JavaScript for dynamic chapter and section loading
-echo "<script>
+?>
+<script>
 function loadChapters() {
     var classId = document.getElementById('class_id').value;
     var subjectId = document.getElementById('subject_id').value;
@@ -126,7 +127,8 @@ function loadTopics() {
         $(topicSelect).select2();
     }
 }
-</script>";
+</script>
+<?php
 
 // Get next quiz number
 $query = "SELECT MAX(quiznumber) as max_quiz FROM quizconfig";
