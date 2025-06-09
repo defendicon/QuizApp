@@ -106,6 +106,26 @@ function loadSections() {
             .catch(error => console.error('Error:', error));
     }
 }
+
+function loadTopics() {
+    var chapterIds = $('#chapter_ids').val();
+    var topicSelect = document.getElementById('topic_ids');
+    if(!topicSelect) return;
+    topicSelect.innerHTML = '<option value="">Select Topics</option>';
+    if(chapterIds && chapterIds.length > 0) {
+        fetch('get_topics.php?chapter_ids=' + chapterIds.join(','))
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(function(topic){
+                    topicSelect.innerHTML += '<option value="' + topic.topic_id + '">' + topic.topic_name + '</option>';
+                });
+                $(topicSelect).select2();
+            })
+            .catch(error => console.error('Error:', error));
+    } else {
+        $(topicSelect).select2();
+    }
+}
 </script>";
 
 // Get next quiz number
@@ -166,8 +186,13 @@ function getAvailableQuestionsCount($conn, $chapter_ids) {
 echo "<script>
 function updateAvailableQuestions() {
     var chapterIds = $('#chapter_ids').val();
+    var topicIds = $('#topic_ids').val();
     if(chapterIds && chapterIds.length > 0) {
-        fetch('get_question_counts.php?chapter_ids=' + chapterIds.join(','))
+        var url = 'get_question_counts.php?chapter_ids=' + chapterIds.join(',');
+        if(topicIds && topicIds.length > 0) {
+            url += '&topic_ids=' + topicIds.join(',');
+        }
+        fetch(url)
             .then(response => response.json())
             .then(data => {
                 // Update max values for each question type
@@ -202,7 +227,12 @@ $('#chapter_ids').on('change', function() {
         $('#selectQuestionsBtn').hide();
     }
     
-    // Update question count info when chapters are selected
+    // Update topics and question count info when chapters are selected
+    loadTopics();
+    updateAvailableQuestions();
+});
+
+$('#topic_ids').on('change', function() {
     updateAvailableQuestions();
 });
 
@@ -223,7 +253,7 @@ $('#random_quiz_checkbox').on('change', function() {
 echo "<script>
 $(document).ready(function() {
   // Initialize Select2 for all dropdowns
-  $('#subject_id, #class_id, #chapter_ids, #section_id').select2({
+  $('#subject_id, #class_id, #chapter_ids, #section_id, #topic_ids').select2({
     width: '100%',
     minimumResultsForSearch: 10
   });
@@ -287,6 +317,7 @@ echo "<script>
 // Function to open question selector modal
 function openQuestionSelector() {
     var chapterIds = $('#chapter_ids').val();
+    var topicIds = $('#topic_ids').val();
     
     if(!chapterIds || chapterIds.length === 0) {
         alert('Please select chapters first to load questions');
@@ -313,23 +344,26 @@ function openQuestionSelector() {
     marks(); // Update total marks display
     
     // Load questions for each type
-    loadQuestionsByType('mcq', 'mcqQuestions');
-    loadQuestionsByType('numerical', 'numericalQuestions');
-    loadQuestionsByType('dropdown', 'dropdownQuestions');
-    loadQuestionsByType('fillblanks', 'fillblanksQuestions');
-    loadQuestionsByType('short', 'shortQuestions');
-    loadQuestionsByType('essay', 'essayQuestions');
+    loadQuestionsByType('mcq', 'mcqQuestions', chapterIds, topicIds);
+    loadQuestionsByType('numerical', 'numericalQuestions', chapterIds, topicIds);
+    loadQuestionsByType('dropdown', 'dropdownQuestions', chapterIds, topicIds);
+    loadQuestionsByType('fillblanks', 'fillblanksQuestions', chapterIds, topicIds);
+    loadQuestionsByType('short', 'shortQuestions', chapterIds, topicIds);
+    loadQuestionsByType('essay', 'essayQuestions', chapterIds, topicIds);
     
     // Show the modal
     $('#questionSelectorModal').modal('show');
 }
 
 // Function to load questions by type
-function loadQuestionsByType(type, containerId) {
-    var chapterIds = $('#chapter_ids').val();
+function loadQuestionsByType(type, containerId, chapterIds, topicIds) {
     if(!chapterIds || chapterIds.length === 0) return;
-    
-    fetch('get_chapter_questions.php?type=' + type + '&chapter_ids=' + chapterIds.join(','))
+    var url = 'get_chapter_questions.php?type=' + type + '&chapter_ids=' + chapterIds.join(',');
+    if(topicIds && topicIds.length > 0) {
+        url += '&topic_ids=' + topicIds.join(',');
+    }
+
+    fetch(url)
         .then(response => response.json())
         .then(data => {
             var container = $('#' + containerId + ' .questions-list');
@@ -1455,7 +1489,19 @@ function saveSelectedQuestions() {
                     </div>
                   </div>
                 </div>
-              </div>              
+              </div>
+
+              <!-- Topics Selection -->
+              <div class="row form-row-mobile mt-3">
+                <div class="col-md-3 col-12 mb-2">
+                  <p class="h5 mobile-text-center">Topics (Optional)</p>
+                </div>
+                <div class="col-md-9 col-12">
+                  <select name="topic_ids[]" id="topic_ids" class="form-control mobile-full-width" multiple>
+                    <option value="">Select Topics</option>
+                  </select>
+                </div>
+              </div>
 
               <div class="text-center pb-4">
                 <button type="submit" class="btn btn-primary btn-round">Set Quiz</button>
@@ -1481,6 +1527,11 @@ function saveSelectedQuestions() {
                   }
                   
                   $chapter_ids = implode(",", array_map('intval', $_POST["chapter_ids"]));
+              }
+
+              $topic_ids = NULL;
+              if (isset($_POST['topic_ids']) && is_array($_POST['topic_ids'])) {
+                  $topic_ids = implode(',', array_map('intval', $_POST['topic_ids']));
               }
               
               // Check if chapters are selected
@@ -1590,7 +1641,7 @@ function saveSelectedQuestions() {
                   }
                   
                   $sql = "INSERT INTO quizconfig (
-                    quiznumber, quizname, subject_id, class_id, chapter_ids,
+                    quiznumber, quizname, subject_id, class_id, chapter_ids, topic_ids,
                     starttime, endtime, duration, maxmarks, 
                     mcq, numerical, dropdown, fill, short, essay,
                     mcqmarks, numericalmarks, dropdownmarks, fillmarks, shortmarks, essaymarks,
@@ -1599,7 +1650,7 @@ function saveSelectedQuestions() {
                     typee, typeemarks, typef, typefmarks,
                     total_questions, is_random, attempts, section
                 ) VALUES (
-                    ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?,
                     ?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?, ?, ?,
@@ -1664,9 +1715,9 @@ function saveSelectedQuestions() {
                       $essaymarks = $typefmarks;
                       
                       // Debugging bind_param
-                      $debug_types_string = "isiisssiiiiiiiiiiiiiiiiiiiiiiiiiiiiis";
+                      $debug_types_string = "isiissssiiiiiiiiiiiiiiiiiiiiiiiiiiiiis";
                       $debug_variables_array = [
-                          $quiznumber, $quizname, $subject_id, $class_id, $chapter_ids,
+                          $quiznumber, $quizname, $subject_id, $class_id, $chapter_ids, $topic_ids,
                           $starttime_sql, $endtime_sql, $duration, $maxmarks,
                           $mcq, $numerical, $dropdown, $fill, $short, $essay,
                           $mcqmarks, $numericalmarks, $dropdownmarks, $fillmarks, $shortmarks, $essaymarks,
@@ -1684,6 +1735,7 @@ function saveSelectedQuestions() {
                           $subject_id,
                           $class_id,
                           $chapter_ids,
+                          $topic_ids,
                           $starttime_sql,
                           $endtime_sql,
                           $duration,
@@ -1796,9 +1848,14 @@ function saveSelectedQuestions() {
                               // For random quiz, preselect random questions from chapters and store them
                               $preselect_chapters = explode(',', $chapter_ids);
                               $chapter_ids_str = implode(',', $preselect_chapters);
+                              $topic_ids_str = '';
+                              if (!empty($topic_ids)) {
+                                  $preselect_topics = explode(',', $topic_ids);
+                                  $topic_ids_str = implode(',', $preselect_topics);
+                              }
                               
                               // Function to get random questions of a specific type
-                              function getRandomQuestions($conn, $type, $count, $chapter_ids_str) {
+                              function getRandomQuestions($conn, $type, $count, $chapter_ids_str, $topic_ids_str = '') {
                                   $questions = array();
                                   if ($count > 0) {
                                       $table = '';
@@ -1812,7 +1869,11 @@ function saveSelectedQuestions() {
                                           default: return array();
                                       }
                                       
-                                      $sql = "SELECT id FROM $table WHERE chapter_id IN ($chapter_ids_str) ORDER BY RAND() LIMIT $count";
+                                      $sql = "SELECT id FROM $table WHERE chapter_id IN ($chapter_ids_str)";
+                                      if (!empty($topic_ids_str)) {
+                                          $sql .= " AND topic_id IN ($topic_ids_str)";
+                                      }
+                                      $sql .= " ORDER BY RAND() LIMIT $count";
                                       $result = $conn->query($sql);
                                       
                                       if ($result && $result->num_rows > 0) {
@@ -1828,22 +1889,22 @@ function saveSelectedQuestions() {
                               $random_questions = array();
                               
                               if ($typea > 0) {
-                                  $random_questions = array_merge($random_questions, getRandomQuestions($conn, 'a', $typea, $chapter_ids_str));
+                                  $random_questions = array_merge($random_questions, getRandomQuestions($conn, 'a', $typea, $chapter_ids_str, $topic_ids_str));
                               }
                               if ($typeb > 0) {
-                                  $random_questions = array_merge($random_questions, getRandomQuestions($conn, 'b', $typeb, $chapter_ids_str));
+                                  $random_questions = array_merge($random_questions, getRandomQuestions($conn, 'b', $typeb, $chapter_ids_str, $topic_ids_str));
                               }
                               if ($typec > 0) {
-                                  $random_questions = array_merge($random_questions, getRandomQuestions($conn, 'c', $typec, $chapter_ids_str));
+                                  $random_questions = array_merge($random_questions, getRandomQuestions($conn, 'c', $typec, $chapter_ids_str, $topic_ids_str));
                               }
                               if ($typed > 0) {
-                                  $random_questions = array_merge($random_questions, getRandomQuestions($conn, 'd', $typed, $chapter_ids_str));
+                                  $random_questions = array_merge($random_questions, getRandomQuestions($conn, 'd', $typed, $chapter_ids_str, $topic_ids_str));
                               }
                               if ($typee > 0) {
-                                  $random_questions = array_merge($random_questions, getRandomQuestions($conn, 'e', $typee, $chapter_ids_str));
+                                  $random_questions = array_merge($random_questions, getRandomQuestions($conn, 'e', $typee, $chapter_ids_str, $topic_ids_str));
                               }
                               if ($typef > 0) {
-                                  $random_questions = array_merge($random_questions, getRandomQuestions($conn, 'f', $typef, $chapter_ids_str));
+                                  $random_questions = array_merge($random_questions, getRandomQuestions($conn, 'f', $typef, $chapter_ids_str, $topic_ids_str));
                               }
                               
                               // Store randomly selected questions in the dedicated random_quiz_questions table
