@@ -622,6 +622,25 @@ INSERT INTO `subjects` (`subject_id`, `subject_name`) VALUES
 (15, 'Computer'),
 (16, 'stats');
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `topics`
+--
+
+CREATE TABLE `topics` (
+  `topic_id` int(11) NOT NULL,
+  `chapter_id` int(11) NOT NULL,
+  `topic_name` varchar(255) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+
+--
+-- Dumping data for table `topics`
+--
+
+
 --
 -- Indexes for dumped tables
 --
@@ -765,6 +784,12 @@ ALTER TABLE `subjects`
   ADD PRIMARY KEY (`subject_id`),
   ADD UNIQUE KEY `subject_name_unique` (`subject_name`);
 
+-- Indexes for table `topics`
+ALTER TABLE `topics`
+  ADD PRIMARY KEY (`topic_id`),
+  ADD UNIQUE KEY `chapter_topic_unique` (`chapter_id`,`topic_name`),
+  ADD KEY `idx_topic_chapter` (`chapter_id`);
+
 --
 -- AUTO_INCREMENT for dumped tables
 --
@@ -840,6 +865,10 @@ ALTER TABLE `shortanswer`
 --
 ALTER TABLE `subjects`
   MODIFY `subject_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+
+-- AUTO_INCREMENT for table `topics`
+ALTER TABLE `topics`
+  MODIFY `topic_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables
@@ -954,6 +983,10 @@ ALTER TABLE `shortanswer`
 --
 ALTER TABLE `studentinfo`
   ADD CONSTRAINT `fk_student_section` FOREIGN KEY (`section_id`) REFERENCES `class_sections` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- Constraints for table `topics`
+ALTER TABLE `topics`
+  ADD CONSTRAINT `fk_topics_chapter` FOREIGN KEY (`chapter_id`) REFERENCES `chapters` (`chapter_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
