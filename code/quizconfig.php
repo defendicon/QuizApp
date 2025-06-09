@@ -255,7 +255,7 @@ $('#random_quiz_checkbox').on('change', function() {
 echo "<script>
 $(document).ready(function() {
   // Initialize Select2 for all dropdowns
-  $('#subject_id, #class_id, #chapter_ids, #section_id, #topic_ids').select2({
+  $('#subject_id, #class_id, #chapter_ids, #section_id, #topic_ids, #modal_topic_ids').select2({
     width: '100%',
     minimumResultsForSearch: 10
   });
@@ -316,15 +316,42 @@ $(document).ready(function() {
 
 // Add JavaScript for loading questions and handling manual question selection
 echo "<script>
+function loadModalTopics(chapterIds, selectedTopics) {
+    var topicSelect = document.getElementById('modal_topic_ids');
+    if(!topicSelect) return;
+    topicSelect.innerHTML = '<option value="">All Topics</option>';
+    if(chapterIds && chapterIds.length > 0) {
+        fetch('get_topics.php?chapter_ids=' + chapterIds.join(','))
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(function(topic){
+                    var option = document.createElement('option');
+                    option.value = topic.topic_id;
+                    option.text = topic.topic_name;
+                    topicSelect.appendChild(option);
+                });
+                if(selectedTopics && selectedTopics.length > 0) {
+                    $(topicSelect).val(selectedTopics).trigger('change');
+                }
+                $(topicSelect).select2();
+            })
+            .catch(error => console.error('Error:', error));
+    } else {
+        $(topicSelect).select2();
+    }
+}
 // Function to open question selector modal
 function openQuestionSelector() {
     var chapterIds = $('#chapter_ids').val();
     var topicIds = $('#topic_ids').val();
-    
+
     if(!chapterIds || chapterIds.length === 0) {
         alert('Please select chapters first to load questions');
         return;
     }
+
+    // Load topics dropdown inside modal
+    loadModalTopics(chapterIds, topicIds);
     
     // Show loading indicator
     $('.questions-list').html('<div class=\"text-center\"><i class=\"fa fa-spinner fa-spin\"></i> Loading questions...</div>');
@@ -690,6 +717,19 @@ function saveSelectedQuestions() {
     // Force re-validation of question counts
     validateQuestionCounts();
 }
+
+// Reload questions when topic filter in modal changes
+$('#modal_topic_ids').on('change', function() {
+    var chapterIds = $('#chapter_ids').val();
+    var topicIds = $('#modal_topic_ids').val();
+    $('.questions-list').html('<div class="text-center"><i class="fa fa-spinner fa-spin"></i> Loading questions...</div>');
+    loadQuestionsByType('mcq', 'mcqQuestions', chapterIds, topicIds);
+    loadQuestionsByType('numerical', 'numericalQuestions', chapterIds, topicIds);
+    loadQuestionsByType('dropdown', 'dropdownQuestions', chapterIds, topicIds);
+    loadQuestionsByType('fillblanks', 'fillblanksQuestions', chapterIds, topicIds);
+    loadQuestionsByType('short', 'shortQuestions', chapterIds, topicIds);
+    loadQuestionsByType('essay', 'essayQuestions', chapterIds, topicIds);
+});
 </script>";
 
 ?>
@@ -1288,6 +1328,13 @@ function saveSelectedQuestions() {
                         </button>
                       </div>
                       <div class="modal-body">
+                        <div class="row mb-3">
+                          <div class="col-12">
+                            <select id="modal_topic_ids" class="form-control" multiple>
+                              <option value="">All Topics</option>
+                            </select>
+                          </div>
+                        </div>
                         <div class="question-tabs">
                           <ul class="nav nav-tabs" role="tablist">
                             <li class="nav-item">
