@@ -108,25 +108,7 @@ function loadSections() {
     }
 }
 
-function loadTopics() {
-    var chapterIds = $('#chapter_ids').val();
-    var topicSelect = document.getElementById('topic_ids');
-    if(!topicSelect) return;
-    topicSelect.innerHTML = '<option value="">Select Topics</option>';
-    if(chapterIds && chapterIds.length > 0) {
-        fetch('get_topics.php?chapter_ids=' + chapterIds.join(','))
-            .then(response => response.json())
-            .then(data => {
-                data.forEach(function(topic){
-                    topicSelect.innerHTML += '<option value="' + topic.topic_id + '">' + topic.topic_name + '</option>';
-                });
-                $(topicSelect).select2();
-            })
-            .catch(error => console.error('Error:', error));
-    } else {
-        $(topicSelect).select2();
-    }
-}
+// Topic dropdown for question selection is loaded within the modal
 </script>
 <?php
 
@@ -188,7 +170,7 @@ function getAvailableQuestionsCount($conn, $chapter_ids) {
 echo "<script>
 function updateAvailableQuestions() {
     var chapterIds = $('#chapter_ids').val();
-    var topicIds = $('#topic_ids').val();
+    var topicIds = $('#modal_topic_ids').val();
     if(chapterIds && chapterIds.length > 0) {
         var url = 'get_question_counts.php?chapter_ids=' + chapterIds.join(',');
         if(topicIds && topicIds.length > 0) {
@@ -229,14 +211,10 @@ $('#chapter_ids').on('change', function() {
         $('#selectQuestionsBtn').hide();
     }
     
-    // Update topics and question count info when chapters are selected
-    loadTopics();
+    // Update available question counts when chapters are selected
     updateAvailableQuestions();
 });
 
-$('#topic_ids').on('change', function() {
-    updateAvailableQuestions();
-});
 
 // Toggle visibility of Select Questions button based on random quiz checkbox
 $('#random_quiz_checkbox').on('change', function() {
@@ -255,7 +233,7 @@ $('#random_quiz_checkbox').on('change', function() {
 echo "<script>
 $(document).ready(function() {
   // Initialize Select2 for all dropdowns
-  $('#subject_id, #class_id, #chapter_ids, #section_id, #topic_ids, #modal_topic_ids').select2({
+  $('#subject_id, #class_id, #chapter_ids, #section_id, #modal_topic_ids').select2({
     width: '100%',
     minimumResultsForSearch: 10
   });
@@ -345,7 +323,7 @@ function loadModalTopics(chapterIds, selectedTopics) {
 // Function to open question selector modal
 function openQuestionSelector() {
     var chapterIds = $('#chapter_ids').val();
-    var topicIds = $('#topic_ids').val();
+    var topicIds = $('#modal_topic_ids').val();
 
     if(!chapterIds || chapterIds.length === 0) {
         alert('Please select chapters first to load questions');
@@ -696,6 +674,12 @@ function saveSelectedQuestions() {
     
     // Add a flag to indicate manual selection
     hiddenInputs += '<input type=\"hidden\" name=\"is_manual_selection\" class=\"selected-question-input\" value=\"1\">';
+
+    // Store selected topics from the modal
+    var topicIds = $('#modal_topic_ids').val();
+    if(topicIds && topicIds.length > 0) {
+        hiddenInputs += '<input type="hidden" name="topic_ids" class="selected-question-input" value="' + topicIds.join(',') + '">';
+    }
     
     // Append hidden inputs to the form
     $('form[name=\"quizconfig\"]').append(hiddenInputs);
@@ -731,6 +715,7 @@ $('#modal_topic_ids').on('change', function() {
     loadQuestionsByType('fillblanks', 'fillblanksQuestions', chapterIds, topicIds);
     loadQuestionsByType('short', 'shortQuestions', chapterIds, topicIds);
     loadQuestionsByType('essay', 'essayQuestions', chapterIds, topicIds);
+    updateAvailableQuestions();
 });
 </script>
 
@@ -1302,18 +1287,6 @@ $('#modal_topic_ids').on('change', function() {
                         </label>
                       </div>
                     </div>
-                  </div>
-                </div>
-
-                <!-- Topics Selection -->
-                <div class="row form-row-mobile mt-3">
-                  <div class="col-md-3 col-12 mb-2">
-                    <p class="h5 mobile-text-center">Topics (Optional)</p>
-                  </div>
-                  <div class="col-md-9 col-12">
-                    <select name="topic_ids[]" id="topic_ids" class="form-control mobile-full-width" multiple>
-                      <option value="">Select Topics</option>
-                    </select>
                   </div>
                 </div>
 
@@ -2015,7 +1988,7 @@ $('#modal_topic_ids').on('change', function() {
   <script>    
     $(document).ready(function() {
       // Existing Select2 initialization
-      $('#subject_id, #class_id, #chapter_ids, #section_id, #topic_ids').select2({
+      $('#subject_id, #class_id, #chapter_ids, #section_id, #modal_topic_ids').select2({
         width: '100%',
         minimumResultsForSearch: 10
       });
