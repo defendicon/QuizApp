@@ -232,14 +232,6 @@
   <div class="page-header header-filter" data-parallax="true" style="background-image: url('./assets/img/profile_city.jpg')">
     <div class="container">
       <div class="row ">
-        <div class="brand text-center" style="width: 100%;">
-            <h1>Narowal Public School And College</h1>
-            <h3 class="title">Educating The Souls</h3>
-            <h4 class="title">Instructor Portal</h4>
-        </div>
-        <br>
-        <p class="h5 text-center" style="width:100%;" ><i>Manage all the content of the Quiz here with ease. Feed Questions into multiple servers and Set Quiz..........</i></p> 
-        <br>
       </div>
     </div>
   </div>  
