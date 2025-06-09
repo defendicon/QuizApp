@@ -305,6 +305,7 @@ function validateQuestionCounts() {
 }
 
 // Add onsubmit validation to the form
+
 $(document).ready(function() {
     $('form').on('submit', function(e) {
         if(!validateQuestionCounts()) {
@@ -313,9 +314,10 @@ $(document).ready(function() {
     });
 });
 </script>";
+?>
 
-// Add JavaScript for loading questions and handling manual question selection
-echo "<script>
+<!-- Add JavaScript for loading questions and handling manual question selection -->
+<script>
 function loadModalTopics(chapterIds, selectedTopics) {
     var topicSelect = document.getElementById('modal_topic_ids');
     if(!topicSelect) return;
@@ -730,9 +732,7 @@ $('#modal_topic_ids').on('change', function() {
     loadQuestionsByType('short', 'shortQuestions', chapterIds, topicIds);
     loadQuestionsByType('essay', 'essayQuestions', chapterIds, topicIds);
 });
-</script>";
-
-?>
+</script>
 
 <!DOCTYPE html>
 <html lang="en">
