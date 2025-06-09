@@ -52,6 +52,37 @@
   } else {
     $notifications = null;
   }
+
+  // Fetch upcoming quiz for this student
+  $upcoming_quiz = null;
+  if (isset($_SESSION['class_id'])) {
+    $class_id = $_SESSION['class_id'];
+    $section = isset($_SESSION['section']) ? $_SESSION['section'] : null;
+    $rollnumber = $_SESSION['rollnumber'];
+
+    $quiz_sql = "SELECT quizname, starttime, maxmarks
+                 FROM quizconfig
+                 WHERE endtime >= NOW()
+                   AND class_id = ?
+                   AND (section IS NULL OR LOWER(section) = LOWER(?))
+                   AND (
+                       SELECT COUNT(*) FROM quizrecord qr
+                       WHERE qr.quizid = quizconfig.quizid
+                         AND qr.rollnumber = ?
+                   ) < attempts
+                 ORDER BY starttime ASC
+                 LIMIT 1";
+    $stmt_quiz = $conn->prepare($quiz_sql);
+    $section_param = $section ? $section : '';
+    $stmt_quiz->bind_param('isi', $class_id, $section_param, $rollnumber);
+    if ($stmt_quiz->execute()) {
+      $result_quiz = $stmt_quiz->get_result();
+      if ($result_quiz && $result_quiz->num_rows > 0) {
+        $upcoming_quiz = $result_quiz->fetch_assoc();
+      }
+    }
+    $stmt_quiz->close();
+  }
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -217,8 +248,16 @@
             <h1>Narowal Public School And College</h1>
             <h3 class="title">Educating The Souls</h3>
             <h4 class="title">Student Portal</h4>
+            <?php if(isset($upcoming_quiz) && $upcoming_quiz): ?>
+            <div class="alert alert-info" style="margin-top:20px;">
+                <strong>Upcoming Quiz:</strong>
+                <?php echo htmlspecialchars($upcoming_quiz['quizname']); ?> |
+                Starts at: <?php echo date('M d, Y h:i A', strtotime($upcoming_quiz['starttime'])); ?> |
+                Marks: <?php echo htmlspecialchars($upcoming_quiz['maxmarks']); ?>
+            </div>
+            <?php endif; ?>
         </div>
-        <br>        
+        <br>
         <br>
       </div>
     </div>
