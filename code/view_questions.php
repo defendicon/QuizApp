@@ -10,6 +10,7 @@
   $filter_class_id = isset($_GET['filter_class']) ? intval($_GET['filter_class']) : 0;
   $filter_subject_id = isset($_GET['filter_subject']) ? intval($_GET['filter_subject']) : 0;
   $filter_chapter_id = isset($_GET['filter_chapter']) ? intval($_GET['filter_chapter']) : 0;
+  $filter_topic_id = isset($_GET['filter_topic']) ? intval($_GET['filter_topic']) : 0;
 
   // Pagination variables
   $records_per_page = 10;
@@ -35,8 +36,8 @@
   // Fetch chapters if class and subject are selected
   $chapters = [];
   if ($filter_class_id && $filter_subject_id) {
-    $chapters_query = "SELECT chapter_id, chapter_name FROM chapters 
-                      WHERE class_id = ? AND subject_id = ? 
+    $chapters_query = "SELECT chapter_id, chapter_name FROM chapters
+                      WHERE class_id = ? AND subject_id = ?
                       ORDER BY chapter_name";
     $stmt = $conn->prepare($chapters_query);
     $stmt->bind_param("ii", $filter_class_id, $filter_subject_id);
@@ -44,6 +45,22 @@
     $chapters_result = $stmt->get_result();
     while ($row = $chapters_result->fetch_assoc()) {
       $chapters[] = $row;
+    }
+    $stmt->close();
+  }
+
+  // Fetch topics if a chapter is selected
+  $topics = [];
+  if ($filter_chapter_id) {
+    $topics_query = "SELECT topic_id, topic_name FROM topics
+                     WHERE chapter_id = ?
+                     ORDER BY topic_name";
+    $stmt = $conn->prepare($topics_query);
+    $stmt->bind_param("i", $filter_chapter_id);
+    $stmt->execute();
+    $topics_result = $stmt->get_result();
+    while ($row = $topics_result->fetch_assoc()) {
+      $topics[] = $row;
     }
     $stmt->close();
   }
@@ -108,9 +125,10 @@
     $table_name = $table_map[$selected_q_type];
     
     // First, count total records for pagination
-    $count_sql = "SELECT COUNT(*) as total 
+    $count_sql = "SELECT COUNT(*) as total
                   FROM " . $conn->real_escape_string($table_name) . " q
                   LEFT JOIN chapters c ON q.chapter_id = c.chapter_id
+                  LEFT JOIN topics t ON q.topic_id = t.topic_id
                   LEFT JOIN classes cl ON c.class_id = cl.class_id
                   LEFT JOIN subjects s ON c.subject_id = s.subject_id
                   WHERE 1=1";
@@ -133,6 +151,11 @@
       $params_count[] = $filter_chapter_id;
       $param_types_count .= "i";
     }
+    if ($filter_topic_id) {
+      $count_sql .= " AND t.topic_id = ?";
+      $params_count[] = $filter_topic_id;
+      $param_types_count .= "i";
+    }
     
     if (!empty($params_count)) {
       $stmt_count = $conn->prepare($count_sql);
@@ -152,9 +175,10 @@
     $total_pages = ceil($total_records / $records_per_page);
     
     // Fetch questions with pagination
-    $sql_fetch_questions = "SELECT q.*, c.chapter_name, cl.class_name, s.subject_name 
+    $sql_fetch_questions = "SELECT q.*, c.chapter_name, t.topic_name, cl.class_name, s.subject_name
                            FROM " . $conn->real_escape_string($table_name) . " q
                            LEFT JOIN chapters c ON q.chapter_id = c.chapter_id
+                           LEFT JOIN topics t ON q.topic_id = t.topic_id
                            LEFT JOIN classes cl ON c.class_id = cl.class_id
                            LEFT JOIN subjects s ON c.subject_id = s.subject_id
                            WHERE 1=1";
@@ -175,6 +199,11 @@
     if ($filter_chapter_id) {
       $sql_fetch_questions .= " AND c.chapter_id = ?";
       $params[] = $filter_chapter_id;
+      $param_types .= "i";
+    }
+    if ($filter_topic_id) {
+      $sql_fetch_questions .= " AND t.topic_id = ?";
+      $params[] = $filter_topic_id;
       $param_types .= "i";
     }
     
@@ -200,15 +229,15 @@
         $questions_html .= "<table class='table table-striped table-hover'>";
         // Header row - varies by question type
         if ($selected_q_type == 'mcq') {
-            $questions_html .= "<thead><tr><th>S.No</th><th>Question</th><th>Option A</th><th>Option B</th><th>Option C</th><th>Option D</th><th>Correct Answer</th><th>Class</th><th>Chapter</th><th>Actions</th></tr></thead>";
+            $questions_html .= "<thead><tr><th>S.No</th><th>Question</th><th>Option A</th><th>Option B</th><th>Option C</th><th>Option D</th><th>Correct Answer</th><th>Class</th><th>Chapter</th><th>Topic</th><th>Actions</th></tr></thead>";
         } elseif ($selected_q_type == 'numerical') {
-            $questions_html .= "<thead><tr><th>S.No</th><th>Question</th><th>Correct Answer</th><th>Class</th><th>Chapter</th><th>Actions</th></tr></thead>";
+            $questions_html .= "<thead><tr><th>S.No</th><th>Question</th><th>Correct Answer</th><th>Class</th><th>Chapter</th><th>Topic</th><th>Actions</th></tr></thead>";
         } else {
             $questions_html .= "<thead><tr><th>S.No</th><th>Question</th>";
             if ($selected_q_type == 'dropdown') {
                 $questions_html .= "<th>Options</th><th>Correct Option</th>";
             }
-            $questions_html .= "<th>Class</th><th>Chapter</th><th>Actions</th></tr></thead>";
+            $questions_html .= "<th>Class</th><th>Chapter</th><th>Topic</th><th>Actions</th></tr></thead>";
         }
         
         $questions_html .= "<tbody>";
@@ -231,9 +260,10 @@
                 $questions_html .= "<td>" . htmlspecialchars($row['answer']) . "</td>";
             }
 
-            // Add class and chapter columns for all question types
+            // Add class, chapter and topic columns for all question types
             $questions_html .= "<td>" . htmlspecialchars($row['class_name'] ?? 'N/A') . "</td>";
             $questions_html .= "<td>" . htmlspecialchars($row['chapter_name'] ?? 'N/A') . "</td>";
+            $questions_html .= "<td>" . htmlspecialchars($row['topic_name'] ?? 'N/A') . "</td>";
             
             $questions_html .= "<td>";
             $questions_html .= "<a href='questionfeed.php?action=edit&q_type=" . htmlspecialchars($selected_q_type) . "&id=" . htmlspecialchars($row['id']) . "' class='btn btn-info btn-sm' style='margin-right: 5px;'>Edit</a>";
@@ -544,7 +574,7 @@
                     <form method="GET" class="row align-items-end" id="filterForm">
                       <input type="hidden" name="q_type" value="<?php echo htmlspecialchars($selected_q_type); ?>">
                       
-                      <div class="col-md-3">
+                      <div class="col-md-2">
                         <div class="form-group">
                           <label for="filter_class">Class</label>
                           <select class="form-control" id="filter_class" name="filter_class" onchange="loadChapters()">
@@ -559,7 +589,7 @@
                         </div>
                       </div>
 
-                      <div class="col-md-3">
+                      <div class="col-md-2">
                         <div class="form-group">
                           <label for="filter_subject">Subject</label>
                           <select class="form-control" id="filter_subject" name="filter_subject" onchange="loadChapters()">
@@ -574,10 +604,10 @@
                         </div>
                       </div>
 
-                      <div class="col-md-3">
+                      <div class="col-md-2">
                         <div class="form-group">
                           <label for="filter_chapter">Chapter</label>
-                          <select class="form-control" id="filter_chapter" name="filter_chapter">
+                          <select class="form-control" id="filter_chapter" name="filter_chapter" onchange="loadTopics()">
                             <option value="0">All Chapters</option>
                             <?php foreach ($chapters as $chapter): ?>
                               <option value="<?php echo $chapter['chapter_id']; ?>"
@@ -589,7 +619,22 @@
                         </div>
                       </div>
 
-                      <div class="col-md-3">
+                      <div class="col-md-2">
+                        <div class="form-group">
+                          <label for="filter_topic">Topic</label>
+                          <select class="form-control" id="filter_topic" name="filter_topic">
+                            <option value="0">All Topics</option>
+                            <?php foreach ($topics as $topic): ?>
+                              <option value="<?php echo $topic['topic_id']; ?>"
+                                <?php echo $filter_topic_id == $topic['topic_id'] ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($topic['topic_name']); ?>
+                              </option>
+                            <?php endforeach; ?>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div class="col-md-2">
                         <div class="form-group">
                           <button type="submit" class="btn btn-primary">
                             <i class="material-icons">filter_list</i> Apply Filters
@@ -648,15 +693,17 @@
   <script src="./assets/js/material-kit.js?v=2.0.4" type="text/javascript"></script>
   
   <script type="text/javascript">
-    function loadChapters() {
+  function loadChapters() {
       var classId = $('#filter_class').val();
       var subjectId = $('#filter_subject').val();
       var chapterSelect = $('#filter_chapter');
+      var topicSelect = $('#filter_topic');
       
       console.log('loadChapters called - Class ID:', classId, 'Subject ID:', subjectId);
       
       // Clear existing options except the first one
       chapterSelect.find('option:not(:first)').remove();
+      topicSelect.find('option:not(:first)').remove();
       
       // Only load chapters if both class and subject are selected
       if (classId > 0 && subjectId > 0) {
@@ -716,6 +763,8 @@
               }));
             });
             console.log('Loaded ' + response.length + ' chapters');
+            // After loading chapters, load topics for selected chapter
+            loadTopics();
           },
           error: function(xhr, status, error) {
             console.error('AJAX Error:', status, error);
@@ -737,15 +786,62 @@
         console.log('Both class and subject must be selected to load chapters');
       }
     }
-    
+
+    function loadTopics() {
+      var chapterId = $('#filter_chapter').val();
+      var topicSelect = $('#filter_topic');
+
+      topicSelect.find('option:not(:first)').remove();
+
+      if (chapterId > 0) {
+        topicSelect.prop('disabled', true);
+        topicSelect.append($('<option>', {
+          text: 'Loading topics...',
+          disabled: true,
+          selected: true
+        }));
+
+        $.ajax({
+          url: 'get_topics.php',
+          type: 'GET',
+          data: { chapter_id: chapterId },
+          dataType: 'json',
+          success: function(response) {
+            topicSelect.find('option:not(:first)').remove();
+            topicSelect.prop('disabled', false);
+
+            if (!Array.isArray(response) || response.length === 0) {
+              topicSelect.append($('<option>', { text: 'No topics found', disabled: true }));
+              return;
+            }
+
+            $.each(response, function(i, topic) {
+              topicSelect.append($('<option>', {
+                value: topic.topic_id,
+                text: topic.topic_name
+              }));
+            });
+          },
+          error: function() {
+            topicSelect.find('option:not(:first)').remove();
+            topicSelect.prop('disabled', false);
+            topicSelect.append($('<option>', { text: 'Error loading topics', disabled: true }));
+          }
+        });
+      }
+    }
+
     // Call loadChapters once when the page loads to populate based on initial selection
     $(document).ready(function() {
       console.log('Document ready - checking if we should load chapters');
-      
+
       // Check if initial values are set
       if ($('#filter_class').val() > 0 && $('#filter_subject').val() > 0) {
         console.log('Initial values set for class and subject, loading chapters');
         loadChapters();
+      }
+      if ($('#filter_chapter').val() > 0) {
+        loadTopics();
       }
     });
   </script>
