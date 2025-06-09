@@ -1567,21 +1567,27 @@ $('#modal_topic_ids').on('change', function() {
 
               // Validate chapter selection
               $chapter_ids = NULL;
-              if (isset($_POST["chapter_ids"]) && is_array($_POST["chapter_ids"])) {
-                  // Check if 'all_chapters' is in the array (this shouldn't happen in normal submission, but just to be safe)
-                  if (in_array('all_chapters', $_POST["chapter_ids"])) {
-                      // Remove 'all_chapters' from the array
-                      $_POST["chapter_ids"] = array_filter($_POST["chapter_ids"], function($value) {
-                          return $value !== 'all_chapters';
-                      });
+              if (isset($_POST["chapter_ids"])) {
+                  $chapter_input = $_POST["chapter_ids"];
+                  if (!is_array($chapter_input)) {
+                      $chapter_input = [$chapter_input];
                   }
-                  
-                  $chapter_ids = implode(",", array_map('intval', $_POST["chapter_ids"]));
+                  // Remove 'all_chapters' from the array if present
+                  $chapter_input = array_filter($chapter_input, function($value) {
+                      return $value !== 'all_chapters';
+                  });
+                  if (!empty($chapter_input)) {
+                      $chapter_ids = implode(',', array_map('intval', $chapter_input));
+                  }
               }
 
               $topic_ids = NULL;
-              if (isset($_POST['topic_ids']) && is_array($_POST['topic_ids'])) {
-                  $topic_ids = implode(',', array_map('intval', $_POST['topic_ids']));
+              if (isset($_POST['topic_ids'])) {
+                  $topic_input = $_POST['topic_ids'];
+                  if (!is_array($topic_input)) {
+                      $topic_input = [$topic_input];
+                  }
+                  $topic_ids = implode(',', array_map('intval', $topic_input));
               }
               
               // Check if chapters are selected
